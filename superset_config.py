@@ -11,17 +11,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-
-# The SQLAlchemy connection string to your database backend
-# This connection defines the path to the database that stores your
-# superset metadata (slices, connections, tables, dashboards, ...).
-# Note that the connection information to connect to the datasources
-# you want to explore are managed directly in the web UI
-
-# for heroku
-SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql+psycopg2://bit:bit@localhost/bit')  # noqa
-# SUPERSET_WEBSERVER_PORT = os.environ.get('PORT', '5008')
-SUPERSET_WEBSERVER_PORT = os.environ.get('PORT', '80')
+SUPERSET_WEBSERVER_PORT = os.environ.get("PORT", "5008")
 
 SUPERSET_WORKERS = os.environ.get('WORKERS', 4)
 

@@ -27,6 +27,7 @@ pip install -r requirements.txt
 # Windows
 cd venv/Scripts & activate & cd ../..
 pip install -r windows\requirements.txt
+pip install -r requirements.txt
 ```
 
 # Initialization
@@ -34,23 +35,23 @@ pip install -r windows\requirements.txt
 # Create an admin user (you will be prompted to set username, first and last name before setting a password)
 fabmanager create-admin --app superset
 
-# Initialize the database
-python bit db init
 
-
-
-
-# Initialize the database
-python bit db upgrade
-
-# Migrations
+# 1 Migrations
 python bit db migrate
 
-# Upgrade the database
+# 2 Initialize the database
 python bit db upgrade
 
+
+
+# Initialize the database
+# python bit db init
+
+# Upgrade the database
+# python bit db upgrade
+
 # Create default roles and permissions
-python bit init
+# python bit init
 
 # Load some data to play with
 # python bit load_examples

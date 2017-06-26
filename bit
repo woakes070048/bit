@@ -20,27 +20,21 @@ BIT_APP_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 # override migrations directory
-migrate.directory=directory=BIT_APP_DIR + '/migrations'
+migrate.directory = BIT_APP_DIR + '/migrations'
 app.extensions['migrate'].directory = BIT_APP_DIR + '/migrations'
-# print(app.extensions['migrate'].directory)
-# print(migrate.directory)
-
-@manager.command
-def chiter():
-    print('CHiter')
 
 
 @manager.command
 def fbsync():
     print('fbsync')
-    from bit_packages.facebook.models import FacebookConnector
-    from bit_packages.facebook.models import AdAccount
+    # from bit_packages.facebook.models import FacebookConnector
+    # from bit_packages.facebook.models import AdAccount
 
     # Get first Facebook connector
     # fc = db.session.query(FacebookConnector).first()
-    fa = db.session.query(AdAccount).filter_by(synchronize=True).first()
+    # fa = db.session.query(AdAccount).filter_by(synchronize=True).first()
 
-    fa.sync_ad_campaigns()
+    # fa.sync_ad_campaigns()
 
     # fc.sync_init()
     # fc.sync()
@@ -49,11 +43,11 @@ def fbsync():
 @manager.command
 def allsync():
     print('allsync')
-    from bit_packages.models import Connector
+    # from bit_packages.models import Connector
 
     # Get All Connectors and Sync
-    for connector in db.session.query(Connector).all():
-        connector.sync()
+    # for connector in db.session.query(Connector).all():
+    #     connector.sync()
 
 
 if __name__ == "__main__":

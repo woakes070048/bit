@@ -1,20 +1,38 @@
-# Use an official Python runtime as a base image
-FROM python:2.7-slim
+FROM alpine:latest
 
-# Set the working directory to /app
-WORKDIR /app
+# Install python, pip and libs 
+RUN apk add --update python \
+                    ca-certificates \
+                    py-pip \
+                    python-dev \
+                    bash \
+                    libffi-dev \
+                    libressl-dev \
+                    cyrus-sasl-dev \
+                    musl-dev \
+                    gcc \ 
+                    g++ \ 
+                    mariadb-dev \
+                    postgresql-dev
 
-# Copy the current directory contents into the container at /app
-ADD . /app
+ADD requirements.txt /tmp/requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip install -r requirements.txt
+# Install dependencies
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Make port 80 available to the world outside this container
-EXPOSE 80
+# Add our code
+ADD . /opt/bit/
+WORKDIR /opt/bit
 
-# Define environment variable
-ENV NAME World
+# Expose is NOT supported by Heroku
+# EXPOSE 5000       
 
-# Run app.py when the container launches
-CMD ["python", "app.py"]
+# Run the image as a non-root user
+RUN adduser -D myuser
+USER myuser
+
+# Run the app.  CMD is required to run on Heroku
+# $PORT is set by Heroku            
+# CMD gunicorn --bind 0.0.0.0:$PORT wsgi 
+
+CMD python bit runserver

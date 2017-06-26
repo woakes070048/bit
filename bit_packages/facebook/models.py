@@ -24,9 +24,6 @@ from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-# superset
-from superset import sm
-
 # local
 from bit_packages.db_helper import ModelHelper
 from bit_packages.models import Connector
@@ -53,15 +50,7 @@ class FacebookConnector(Connector):
                           primary_key=True)
     ad_accounts = relationship('AdAccount', cascade='all,delete',
                                back_populates='connector')
-    # user_id = Column(Integer, ForeignKey('ab_user.id'))
-    # owner = relationship(
-    #     sm.user_model,
-    #     backref='facebook_connectors',
-    #     foreign_keys=[user_id]
-    # )
     uid = Column(String(255), unique=True)
-    # app_id = Column(String(255))
-    # app_secret = Column(String(255))
     access_token = Column(String(255))
 
     data_sources = (
