@@ -1,0 +1,5 @@
+windows/sasl-0.2.1-cp27-cp27m-win32.whl
+superset==0.18.4
+psycopg2
+facebookads
+Flask-Mail
