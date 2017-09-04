@@ -1,0 +1,9 @@
+Methods:
+1. get_columns ()
+    return all parsed columns
+
+2. get_data(*args)
+    return all parsed data by *args
+
+3. get_sync_field()
+    return sync_field

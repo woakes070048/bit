@@ -1,0 +1,26 @@
+app_id = id1004615216
+api_token = ab592f53-d284-4615-8eca-45cf721fadbd
+from = 2017-08-01
+to = 2017-08-10
+
+
+APIs
+https://support.appsflyer.com/hc/en-us/sections/201695053-APIs
+
+
+Raw Data Reports https://support.appsflyer.com/hc/en-us/articles/208387843-Raw-Data-Reports-V5
+
+Installations: https://hq.appsflyer.com/export/{app_id}/installs_report/v5?api_token={api_token}&from={from_date}&to={to_date}
+In-App Events: https://hq.appsflyer.com/export/{app_id}/in_app_events_report/v5?api_token={api_token}&from={from_date}&to={to_date}
+
+Performance Reports
+
+Partners Report: https://hq.appsflyer.com/export/{app_id}/partners_report/v5?api_token={api_token}&from={from_date}&to={to_date}
+
+Daily Report: https://hq.appsflyer.com/export/{app_id}/partners_report/v5?api_token={api_token}&from={from_date}&to={to_date}
+
+Geo Report: https://hq.appsflyer.com/export/{app_id}/geo_report/v5?api_token={api_token}&from={from_date}&to={to_date}
+
+Partners by Date Report: https://hq.appsflyer.com/export/{app_id}/partners_by_date_report/v5?api_token={api_token}&from={from_date}&to={to_date}
+
+Geo by Date Report: https://hq.appsflyer.com/export/{app_id}/geo_by_date_report/v5?api_token={api_token}&from={from_date}&to={to_date} 

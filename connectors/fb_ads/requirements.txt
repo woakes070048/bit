@@ -1,0 +1,3 @@
+petl
+# facebookads==2.9.2
+facebookads==2.10.1

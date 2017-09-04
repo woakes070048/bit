@@ -1,0 +1,108 @@
+Ad
+Ad ID
+Ad Type
+Adset
+Adset ID
+Advertising ID
+af_purchase (Event counter)
+af_purchase (Sales in USD)
+af_purchase (Unique users)
+Agency/PMD (af_prt)
+Android ID
+App ID
+App Name
+App Version
+AppsFlyer ID
+ARPU
+Attributed Touch Time
+Attributed Touch Type
+Attribution Lookback
+Average eCPI
+Bundle ID
+Campaign
+Campaign (c)
+Campaign ID
+Carrier
+Channel
+City
+Clicks
+Contributor 1 Campaign
+Contributor 1 Media Source
+Contributor 1 Partner
+Contributor 1 Touch Time
+Contributor 1 Touch Type
+Contributor 2 Campaign
+Contributor 2 Media Source
+Contributor 2 Partner
+Contributor 2 Touch Time
+Contributor 2 Touch Type
+Contributor 3 Campaign
+Contributor 3 Media Source
+Contributor 3 Partner
+Contributor 3 Touch Time
+Contributor 3 Touch Type
+Conversion Rate
+Cost Currency
+Cost Model
+Cost Value
+Country
+Country Code
+CTR
+Customer User ID
+Date
+Device Type
+DMA
+Event Name
+Event Revenue
+Event Revenue Currency
+Event Revenue USD
+Event Source
+Event Time
+Event Value
+first_open (Event counter)
+first_open (Sales in USD)
+first_open (Unique users)
+HTTP Referrer
+IDFA
+IDFV
+IMEI
+Impressions
+Install Time
+Installs
+IP
+Is Primary Attribution
+Is Receipt Validated
+Is Retargeting
+Keywords
+Language
+Loyal Users
+Loyal Users/Installs
+Media Source
+Media Source (pid)
+Operator
+Original URL
+OS Version
+Partner
+Platform
+Postal Code
+Reengagement Window
+Region
+Retargeting Conversion Type
+ROI
+SDK Version
+session_start (Event counter)
+session_start (Sales in USD)
+session_start (Unique users)
+Sessions
+Site ID
+State
+Sub Param 1
+Sub Param 2
+Sub Param 3
+Sub Param 4
+Sub Param 5
+Sub Site ID
+Total Cost
+Total Revenue
+User Agent
+WIFI

@@ -1,0 +1,3 @@
+# TODO move to connector
+-r fb_ads/requirements.txt
+-r google_adwords/requirements.txt

@@ -1,0 +1,3 @@
+win/mysqlclient-1.3.9-cp27-cp27m-win32.whl
+win/sasl-0.2.1-cp27-cp27m-win32.whl
+-r requirements.txt
