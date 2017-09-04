@@ -94,3 +94,8 @@ ENV/
 .idea/
 /superset_config_local.py
 /security_config.py
+/bit_packages/zodiac
+
+*.sublime*
+/reports
+/celerybeat-schedule

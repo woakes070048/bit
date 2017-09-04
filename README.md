@@ -1,11 +1,11 @@
-# Business Analytics Tool
+# Codesmart Business Analytics Tool
 
-Default db located Userdata dir 
+Default sqlLite db located in Userdata dir 
 ```
 .superset/superset.db
 ```
 
-if you use Superser before and database exist maybo conflict with exist in database user by unique email
+if you use Codesmart before and database exist maybe conflict with exist in database user by unique email
 
 # Installation & Configuration
 ```
@@ -26,8 +26,7 @@ pip install -r requirements.txt
 
 # Windows
 cd venv/Scripts & activate & cd ../..
-pip install -r windows\requirements.txt
-pip install -r requirements.txt
+pip install -r win_requirements.txt
 ```
 
 # Initialization
@@ -35,33 +34,25 @@ pip install -r requirements.txt
 # Create an admin user (you will be prompted to set username, first and last name before setting a password)
 fabmanager create-admin --app superset
 
-
 # 1 Migrations
-python bit db migrate
+python bit.py db migrate
 
 # 2 Initialize the database
-python bit db upgrade
-
-
-
-# Initialize the database
-# python bit db init
-
-# Upgrade the database
-# python bit db upgrade
+python bit.py db upgrade
 
 # Create default roles and permissions
-# python bit init
+python bit.py init
+
 
 # Load some data to play with
-# python bit load_examples
+# python bit.py load_examples
 ```
 
 # Run server
 ```
 # Linux 
 # Start the web server on port 8088, use -p to bind to another port
-python bit runserver
+python bit.py runserver
 ```
 
 ```
@@ -74,5 +65,5 @@ python bit runserver
 ```
 # Windows OR development web server, use the -d switch
 
-python bit runserver -d
+python bit.py runserver -d
 ```
