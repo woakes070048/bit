@@ -1,5 +1,5 @@
-app_id = id1004615216
-api_token = ab592f53-d284-4615-8eca-45cf721fadbd
+app_id = xxxxxxxxxxxxx
+api_token = xxxxxxxxxxxxx
 from = 2017-08-01
 to = 2017-08-10
 
