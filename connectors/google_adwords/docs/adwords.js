@@ -1,53 +1,18 @@
-/**
- * @name Export Adwords Data to BigQuery
- *
- * @overview The Export Data to BigQuery script sets up a BigQuery
- *       dataset and tables, downloads a report from AdWords and then
- *       loads the report to BigQuery.
- *
- * @author Codesmart
- *
- * @changelog
- * - version 0.1
- *   - Released initial version.
- */
-
 Date.prototype.addDays = function(days) {
     this.setDate(this.getDate() + parseInt(days));
     return this;
 };
-
-
 
 function Storage(rootName, serviceAccount) {
     this.dateTime = new Date();
     this.configFileName = "config.json";
     this.account = AdWordsApp.currentAccount();
     this.timeZone = this.account.getTimeZone();
-
-    this.rootName = rootName; /* rootName + '_' + this.account.getCustomerId(); */
-
-    // this.dateName = Utilities.formatDate(this.date, this.timeZone, 'yyyy-MM-dd');
-    // this.timeName = Utilities.formatDate(this.date, this.timeZone, 'HH-mm');
+    this.rootName = rootName;
     this.rootFolder = this.createSubFolder(DriveApp.getRootFolder(), this.rootName);
     this.rootFolder.addEditor(serviceAccount);
-
-    // this.currentFolder = this.createSubFolder(
-    //     this.createSubFolder(this.rootFolder, this.dateName),
-    //     this.timeName
-    // );
-
-    // this.writeFile = function(fileName, data){
-    //     Logger.log('Save data ('+ data.length/1024/1024 + 'Mb): ' + fileName);
-    //     this.currentFolder.createFile(fileName, data);
-    // };
-
     this.config = this.readConfig();
 }
-
-// Storage.prototype.constructor = function () {
-//
-// };
 
 Storage.prototype.createSubFolder = function(folder, subFolderName){
     var it = folder.getFoldersByName(subFolderName);
@@ -57,7 +22,6 @@ Storage.prototype.createSubFolder = function(folder, subFolderName){
 
     return folder.createFolder(subFolderName);
 };
-
 
 Storage.prototype.writeReport = function(tableName, date, rows){
     Logger.log("Saving report: " + tableName + " rows: " + rows.length);
@@ -80,7 +44,6 @@ Storage.prototype.writeBlob = function (folder, blob) {
 
     // Logger.log("Create file: " + fileName);
     folder.createFile(blob);
-
 };
 
 Storage.prototype.saveConfig = function () {
@@ -111,12 +74,10 @@ Storage.prototype.defaultConfig = function () {
         if(firstDate==null || campaignDate < firstDate)
               firstDate = campaignDate;
     }
-
     return  {
         lastDate: Utilities.formatDate(firstDate, this.timeZone, 'yyyy/MM/dd')
     }
 };
-
 
 Storage.prototype.readConfig = function () {
     var files = this.rootFolder.getFilesByName(this.configFileName);
@@ -124,7 +85,6 @@ Storage.prototype.readConfig = function () {
     if (files.hasNext()) {
         configFile = files.next();
     }
-
     if(configFile != null ){
         Logger.log("Read config file:" + configFile.getName());
         var content = configFile.getBlob().getDataAsString();
@@ -133,9 +93,6 @@ Storage.prototype.readConfig = function () {
     return this.defaultConfig();
 
 };
-
-
-
 
 function Etl(rootFolder, googleDriveServiceAccount){
     this.drive = new Storage(rootFolder, googleDriveServiceAccount);
@@ -150,7 +107,6 @@ Etl.prototype.getLastReportDate = function(){
     Logger.log("Last date:" + this.drive.config.lastDate);
     return new Date(this.drive.config.lastDate);
 };
-
 
 Etl.prototype.REPORT_BASE_FIELDS = [
     'Date',
@@ -260,7 +216,6 @@ Etl.prototype.exportReport = function(reportInfo, since){
 
     return; */
 
-
     var queryIterator = report.rows();
 
     var rows = [];
@@ -319,5 +274,3 @@ function main() {
     var etl = new Etl('bit', 'drive-993@project-id-8281928869006252347.iam.gserviceaccount.com');
     etl.run();
 }
-
-
