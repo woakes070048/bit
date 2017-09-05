@@ -8,7 +8,6 @@ import requests
 from dateutil import parser
 
 # facebookads
-# from facebookads import adobjects as fbO
 from facebookads.adobjects.user import User as fbUser
 from facebookads.adobjects.adaccount import AdAccount as fbAdAccount
 from facebookads.adobjects.campaign import Campaign as fbAdCampaign
@@ -16,7 +15,6 @@ from facebookads.adobjects.adset import AdSet as fbAdSet
 from facebookads.adobjects.ad import Ad as fbAd
 from facebookads.adobjects.adsinsights import AdsInsights as fbAdsInsights
 from facebookads.adobjects.adreportrun import AdReportRun as fbAdReportRun
-from facebookads.api import FacebookAdsApi
 
 # flask_appbuilder
 from flask_appbuilder import Model
@@ -36,8 +34,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from superset import db
 
 # local
-from bit.models.db_helper import ModelHelper
-from bit.models import Connector
+from bit.utils.db_helper import ModelHelper
 from bit.models import PerformanceReport
 
 # fb
@@ -49,108 +46,7 @@ from .. sync_fields import fb_ad_fields
 from .. sync_fields import fb_ads_insight_fields
 
 
-from .. import config as fb_config
-
-
 logger = logging.getLogger(__name__)
-
-
-class FacebookConnector(Connector):
-    """Facebook: Model Auth connector"""
-
-    __tablename__ = 'bit_facebook_connector'  # sql table name
-
-    _api_ = None
-
-    # ForeignKey to Connector (Parent)
-    id = Column(Integer, ForeignKey('bit_connectors.id'), primary_key=True)
-
-    # Back relation from Connector To FacebookConnector (Children)
-    ad_accounts = relationship(
-        'AdAccount',
-        cascade='all,delete',
-        back_populates='connector'
-    )
-
-    # data fields
-    uid = Column(String(255), unique=True)
-    access_token = Column(String(255))
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'facebook_ads'
-    }
-
-    data_sources = (
-        # InsightsPlacementImpressionDeviceDataSource,
-        # InsightsAgeGenderDataSource,
-        # InsightsAgeDataSource,
-        # InsightsGenderDataSource,
-        # InsightsCountryDataSource,
-        # InsightsDevicePlatformImpressionDeviceDataSource
-    )
-
-    @property
-    def api(self):
-        """Singleton Api init."""
-
-        if self._api_ is None:
-
-            log_msg = '[{}] INIT API {}'.format(
-                'Facebook',
-                self.name
-            )
-            logger.info(log_msg)
-
-            self._api_ = FacebookAdsApi.init(
-                app_id=fb_config.fb_app_id,
-                app_secret=fb_config.db_app_secret,
-                access_token=self.access_token
-            )
-        return self._api_
-
-    def sync_ad_accounts(self):
-        """Synchronization Facebook AdAccount."""
-
-        self.api  # move to init
-        AdAccount.sync(connector=self)
-
-    # def sync_init(self):
-        # """Synchronization All."""
-
-        # self.api  # move to init
-        # batch = Batch(api=self.api)
-        # AdAccount.sync(connector=self)
-        # for ad_account in AdAccount.objects.filter(
-        #         connector=self,synchronize=True):
-        #     AdCampaign.sync(connector=self, batch=batch, account=ad_account)
-        #     AdSet.sync(connector=self, batch=batch, account=ad_account)
-        #     batch.execute()
-
-    @property
-    def get_admin_data_sources(self):
-
-        ds = frozenset([
-            'InsightsPlacementImpressionDeviceDataSource',
-            'InsightsAgeGenderDataSource',
-            'InsightsAgeDataSource',
-            'InsightsGenderDataSource',
-            'InsightsCountryDataSource',
-            'InsightsDevicePlatformImpressionDeviceDataSource',
-        ])
-
-        return '<br/>'.join(ds)
-
-    def get_data_sources(self):
-        """Return All Data Sources for connector"""
-
-        for data_source in self.data_sources:
-            print(data_source)
-
-        # for ad_account in AdAccount.objects.filter(connector=self,
-        #                                            synchronize=True):
-        #     FacebookAdsApi.set_default_account_id(ad_account.native_id)
-        #     for data_source in self.data_sources:
-        #         yield data_source(engine=self.api)
 
 
 class AdAccount(Model, ModelHelper):

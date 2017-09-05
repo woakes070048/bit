@@ -23,7 +23,7 @@ class AppsFlyerConnectorView(SupersetModelView, DeleteMixin):
     datamodel = SQLAInterface(AppsFlyerConnector)
 
     list_columns = [
-        'name', 'app_id', 'get_admin_data_sources'
+        'name', 'app_id', 'admin_data_sources'
     ]
 
     add_columns = [

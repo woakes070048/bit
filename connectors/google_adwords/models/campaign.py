@@ -13,7 +13,7 @@ from flask_appbuilder import Model
 
 
 # local
-from bit.models.db_helper import ModelHelper
+from bit.utils.db_helper import ModelHelper
 
 
 class CampaignPerformanceReport(Model, ModelHelper):

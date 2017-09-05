@@ -9,11 +9,14 @@ CONNECTOR_INFO = {
 
     'key': 'adwords',
 
+    'static_folder': '/static/bit/images/connectors',
+
     'img_folder': 'img',
 
     'docs_folder': 'docs',
 
     'logo': 'logo.png',
+    'logo_pat': '<img style="padding:15px;width:100px;float:left;" src="{}"/>',
 
     'description': 'Lorem Ipsum is simply dummy text of the printing and'
                    ' typesetting industry. Lorem Ipsum has been the'
@@ -32,14 +35,36 @@ CONNECTOR_INFO = {
 
     'sync_field': 'date',
 
-    'reports': frozenset([
-        'CAMPAIGN_PERFORMANCE_REPORT',
-        'GENDER_PERFORMANCE_REPORT',
-        'GEO_PERFORMANCE_REPORT',
-        'PLACEHOLDER_FEED_ITEM_REPORT',
-        'PLACEMENT_PERFORMANCE_REPORT',
-        'SEARCH_QUERY_PERFORMANCE_REPORT'
-    ]),
+    'reports': {
+        'AD_PERFORMANCE_REPORT': {
+            'name': 'Ad Performance Report',
+            'key': 'AD_PERFORMANCE_REPORT',
+        },
+        'CAMPAIGN_PERFORMANCE_REPORT': {
+            'name': 'Campaign Performance Report',
+            'key': 'CAMPAIGN_PERFORMANCE_REPORT',
+        },
+        'GENDER_PERFORMANCE_REPORT': {
+            'name': 'Gender Performance Report',
+            'key': 'GENDER_PERFORMANCE_REPORT',
+        },
+        'GEO_PERFORMANCE_REPORT': {
+            'name': 'Geo Performance Report',
+            'key': 'GEO_PERFORMANCE_REPORT',
+        },
+        'PLACEHOLDER_FEED_ITEM_REPORT': {
+            'name': 'Placeholder Feed Item Report',
+            'key': 'PLACEHOLDER_FEED_ITEM_REPORT',
+        },
+        'PLACEMENT_PERFORMANCE_REPORT': {
+            'name': 'Placement Performance Report',
+            'key': 'PLACEMENT_PERFORMANCE_REPORT',
+        },
+        'SEARCH_QUERY_PERFORMANCE_REPORT': {
+            'name': 'Search Query Performance Report',
+            'key': 'SEARCH_QUERY_PERFORMANCE_REPORT',
+        },
+    },
 
     'fields_types': {
         """ 

@@ -14,7 +14,7 @@ from superset import db
 
 # flask_appbuilder
 from flask_appbuilder import Model
-dateutil_parser
+
 # sqlalchemy
 from sqlalchemy import Column
 from sqlalchemy import String
@@ -26,7 +26,7 @@ from sqlalchemy.orm import relationship
 from superset import app
 
 # locale
-from db_helper import ModelHelper
+from bit.utils.db_helper import ModelHelper
 
 DB_PREFIX = '{}'.format(
     app.config.get('APP_DB_PREFIX', 'bit'),

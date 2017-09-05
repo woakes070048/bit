@@ -34,12 +34,12 @@ from flask_babel import lazy_gettext as _
 from superset import app
 from superset import db
 from superset import sm
-from superset.connectors.base import BaseDatasource
+from superset.connectors.base.models import BaseDatasource
 from superset.utils import get_celery_app
 from superset.utils import send_email_smtp
 
 # locale
-from bit.utils import EtlStatus
+from bit.utils.etl_status import EtlStatus
 
 
 celery_app = get_celery_app(app.config)

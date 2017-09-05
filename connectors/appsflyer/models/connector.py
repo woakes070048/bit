@@ -44,13 +44,52 @@ class AppsFlyerConnector(Connector):
     api_token = Column(String(255))
     url_pat = Column(String(255))
 
+    # no db fields/methods
+
     data_sources = CONNECTOR_INFO.get('reports')
 
-    @property
-    def get_admin_data_sources(self):
+    def connector_name(self):
+        """ String: connector name. """
+        return CONNECTOR_INFO.get('name', '')
+
+    def connector_description(self):
+        """ String: connector description. """
+        return CONNECTOR_INFO.get('description', '')
+
+    def connector_logo(self):
+        """ String: connector name. """
+        logo = '{}/{}/logo.png'.format(
+            CONNECTOR_INFO.get('static_folder', ''),
+            CONNECTOR_INFO.get('key', '')
+        )
+        return CONNECTOR_INFO.get('logo_pat', '').format(logo)
+
+    def connector_info(self):
+
+        logging.info('{} info'.format(self.connector_name))
+
+        """ String: connector info. """
+        # change url
+        html = '<h4><a href="/appsflyerconnectorview/list/">{name}</a></h4>' \
+               '{logo}' \
+               '<p>{description}</p>'.format(
+            name=self.connector_name(),
+            logo=self.connector_logo(),
+            description=self.connector_description(),
+        )
+        return html
+
+    def admin_data_sources(self):
         """ List: data_sources(Reports) """
 
-        return '<br/>'.join(self.data_sources)
+        reports = self.data_sources
+        ds = [reports.get(report).get('name') for report in reports]
+
+        html = '<p style="width:250px;">{}</p>'.format(
+            '<br/>'.join(sorted(ds))
+        )
+
+        return html
 
     # sync
     report_folder = 'reports/{}'.format(CONNECTOR_INFO.get('key'))

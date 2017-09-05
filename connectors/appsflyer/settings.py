@@ -9,14 +9,16 @@ CONNECTOR_INFO = {
 
     'key': 'appsflyer',
 
-    'img_folder': 'img',
+    'static_folder': '/static/bit/images/connectors',
 
+    'img_folder': 'img',
     'docs_folder': 'docs',
 
     'logo': 'logo.png',
+    'logo_pat': '<img style="padding:15px;width:100px;float:left;" src="{}"/>',
 
-    'description': 'Lorem Ipsum is simply dummy text of the printing and'
-                   ' typesetting industry. Lorem Ipsum has been the'
+    'description': 'Pull APIs - Pulling AppsFlyer Reports by APIs <br/>'
+                   'Typesetting industry. Lorem Ipsum has been the'
                    ' industry\'s standard dummy text ever since the 1500s,'
                    ' when an unknown printer took a galley of type and'
                    ' scrambled it to make a type specimen book. It has'
@@ -31,15 +33,34 @@ CONNECTOR_INFO = {
     'report_cache_timeout': 60 * 60 * 24,
 
     'sync_field': 'date',
+    'chunk_size': 7,  # days
 
-    'reports': frozenset([
-        'installs_report',
-        'in_app_events_report',
-        'partners_report',
-        'geo_report',
-        'partners_by_date_report',
-        'geo_by_date_report'
-    ]),
+    'reports': {
+        'installs_report': {
+            'name': 'Installations',
+            'key': 'installs_report',
+        },
+        'in_app_events_report': {
+            'name': 'In-App Events',
+            'key': 'installs_report',
+        },
+        'partners_report': {
+            'name': 'Partners Report',
+            'key': 'installs_report',
+        },
+        'geo_report': {
+            'name': 'Geo Report',
+            'key': 'installs_report',
+        },
+        'partners_by_date_report': {
+            'name': 'Partners by Date Report',
+            'key': 'installs_report',
+        },
+        'geo_by_date_report': {
+            'name': 'Geo by Date Report',
+            'key': 'installs_report',
+        },
+    },
 
     'fields_types': {
         """ 
