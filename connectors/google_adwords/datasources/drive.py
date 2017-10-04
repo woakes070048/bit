@@ -53,7 +53,7 @@ class GoogleDriveDataSource(DataSource):
         #    self._dates = [date for date in dates if date < self._config_last_date]
 
 
-        last_date = parser.parse('2017-06-01').date() - timedelta(days=1)
+        last_date = parser.parse('2017-08-18').date() - timedelta(days=1)
         self._dates = [date for date in dates if
                        last_date < date < self._config_last_date]
 

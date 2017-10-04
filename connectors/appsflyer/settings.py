@@ -42,23 +42,23 @@ CONNECTOR_INFO = {
         },
         'in_app_events_report': {
             'name': 'In-App Events',
-            'key': 'installs_report',
+            'key': 'in_app_events_report',
         },
         'partners_report': {
             'name': 'Partners Report',
-            'key': 'installs_report',
+            'key': 'partners_report',
         },
         'geo_report': {
             'name': 'Geo Report',
-            'key': 'installs_report',
+            'key': 'geo_report',
         },
         'partners_by_date_report': {
             'name': 'Partners by Date Report',
-            'key': 'installs_report',
+            'key': 'partners_by_date_report',
         },
         'geo_by_date_report': {
             'name': 'Geo by Date Report',
-            'key': 'installs_report',
+            'key': 'geo_by_date_report',
         },
     },
 

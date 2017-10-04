@@ -38,6 +38,8 @@ from superset.views.base import get_datasource_exist_error_mgs
 from superset.connectors.sqla.views import TableModelView
 from superset.connectors.sqla.views import TableColumnInlineView
 
+
+
 # local bit package
 from bit.models.etl import EtlPeriod
 from bit.models.etl import EtlTable
@@ -62,7 +64,7 @@ class EtlTableView(SupersetModelView, DeleteMixin):
     datamodel = SQLAInterface(EtlTable)
 
     list_columns = [
-        'connector', 'table.database', 'table', 'datasource', 'sql_table_name',
+        'connector.type', 'connector.name', 'table.database', 'table', 'datasource', 'sql_table_name',
         'sync_field', 'sync_last', 'sync_last_time',
         'progress', 'status', 'repr_sync_periodic', 'sync_next_time',
         'is_valid', 'is_active', 'is_scheduled'
@@ -70,15 +72,15 @@ class EtlTableView(SupersetModelView, DeleteMixin):
     ]
 
     add_columns = [
-        'connector', 'table', 'datasource', 'name', 'sync_field', 'sync_last', 'chunk_size',
-        'sync_periodic', 'sync_periodic_hour'
+        'connector', 'table', 'datasource', 'name', 'sync_field', 'sync_last',
+        'chunk_size', 'sync_periodic', 'sync_periodic_hour'
     ]
 
     edit_schema = ['schema']
 
     edit_columns = [
-        'sync_field', 'chunk_size', 'sync_periodic', 'sync_periodic_hour',
-        'is_active'
+        'sync_field', 'sync_last', 'chunk_size', 'sync_periodic',
+        'sync_periodic_hour', 'is_active'
     ]
 
     edit_columns = edit_columns
@@ -192,6 +194,16 @@ class EtlTableView(SupersetModelView, DeleteMixin):
         obj.create_table()
         obj.sync_next_time = obj.get_next_sync()
 
+        # test
+        obj.cccc()
+
+
+
+    # def post_add(self):
+    #     # create ds table
+    #
+    #     return
+
     def pre_update(self, obj):
         obj.sync_next_time = obj.get_next_sync()
 
@@ -276,108 +288,3 @@ appbuilder.add_view(
     category_icon='fa-refresh',
     category_label=__('ETL')
 )
-
-
-#
-# class EtlTableColumnInlineViewttt(SupersetModelView):
-#     datamodel = SQLAInterface(EtlTableColumn)
-#     # list_columns = ['column_name', 'verbose_name']
-#     # list_widget = ListBlock
-#
-#
-# class EtlTableColumnInlineView(CompactCRUDMixin, SupersetModelView):  # noqa
-#     datamodel = SQLAInterface(EtlTableColumn)
-#     can_delete = False
-#     list_widget = ListWidgetWithCheckboxes
-#     edit_columns = [
-#         'column_name', 'verbose_name', 'description',
-#         'type', 'groupby', 'filterable',
-#         'etl_table', 'count_distinct', 'sum', 'min', 'max', 'expression',
-#         'is_dttm', 'python_date_format', 'database_expression']
-#     add_columns = edit_columns
-#     list_columns = ['is_dttm']
-#     # list_columns = [
-#     #     'column_name', 'type', 'groupby', 'filterable', 'count_distinct',
-#     #     'sum', 'min', 'max', 'is_dttm']
-#     page_size = 500
-#     description_columns = {
-#         'is_dttm': _(
-#             "Whether to make this column available as a "
-#             "[Time Granularity] option, column has to be DATETIME or "
-#             "DATETIME-like"),
-#         'filterable': _(
-#             "Whether this column is exposed in the `Filters` section "
-#             "of the explore view."),
-#         'type': _(
-#             "The data type that was inferred by the database. "
-#             "It may be necessary to input a type manually for "
-#             "expression-defined columns in some cases. In most case "
-#             "users should not need to alter this."),
-#         'expression': utils.markdown(
-#             "a valid SQL expression as supported by the underlying backend. "
-#             "Example: `substr(name, 1, 1)`", True),
-#         'python_date_format': utils.markdown(Markup(
-#             "The pattern of timestamp format, use "
-#             "<a href='https://docs.python.org/2/library/"
-#             "datetime.html#strftime-strptime-behavior'>"
-#             "python datetime string pattern</a> "
-#             "expression. If time is stored in epoch "
-#             "format, put `epoch_s` or `epoch_ms`. Leave `Database Expression` "
-#             "below empty if timestamp is stored in "
-#             "String or Integer(epoch) type"), True),
-#         'database_expression': utils.markdown(
-#             "The database expression to cast internal datetime "
-#             "constants to database date/timestamp type according to the DBAPI. "
-#             "The expression should follow the pattern of "
-#             "%Y-%m-%d %H:%M:%S, based on different DBAPI. "
-#             "The string should be a python string formatter \n"
-#             "`Ex: TO_DATE('{}', 'YYYY-MM-DD HH24:MI:SS')` for Oracle"
-#             "Superset uses default expression based on DB URI if this "
-#             "field is blank.", True),
-#     }
-#     label_columns = {
-#         'column_name': _("Column"),
-#         'verbose_name': _("Verbose Name"),
-#         'description': _("Description"),
-#         'groupby': _("Groupable"),
-#         'filterable': _("Filterable"),
-#         'etl_table': _("Etl Table"),
-#         'count_distinct': _("Count Distinct"),
-#         'sum': _("Sum"),
-#         'min': _("Min"),
-#         'max': _("Max"),
-#         'expression': _("Expression"),
-#         'is_dttm': _("Is temporal"),
-#         'python_date_format': _("Datetime Format"),
-#         'database_expression': _("Database Expression")
-#     }
-# appbuilder.add_view_no_menu(EtlTableColumnInlineView)
-#
-# class EtlTableView(SupersetModelView, DeleteMixin):
-#     """View For EtlTable Model."""
-#
-#     datamodel = SQLAInterface(EtlTable)
-#
-#     add_columns = ['database', 'schema', 'table_name']
-#
-#     edit_columns = [
-#         'table_name', 'filter_select_enabled', 'slices',
-#         'database', 'schema',
-#         'description', 'owner',
-#         'default_endpoint', 'offset', 'cache_timeout']
-#
-#     show_columns = edit_columns + ['perm']
-#
-#     # related_views = [EtlTableColumnInlineView, SqlMetricInlineView]
-#     related_views = [EtlTableColumnInlineView]
-#
-#
-# # Register EtlTableView Model View
-# appbuilder.add_view(
-#     EtlTableView,
-#     'Tables',
-#     icon='fa-table',
-#     category='ETL',
-#     category_icon='fa-bicycle',
-#     category_label=__('ETL')
-# )

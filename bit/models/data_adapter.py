@@ -29,7 +29,15 @@ class DataAdapter(object):
             return None
         if not len(value):
             return 0.0
-        return float(value)
+
+        v = 0
+
+        try:
+            v = float(value)
+        except:
+            pass
+
+        return v
 
     @classmethod
     def string_to_date(cls, value):

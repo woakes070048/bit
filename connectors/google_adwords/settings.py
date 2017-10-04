@@ -15,7 +15,9 @@ CONNECTOR_INFO = {
 
     'docs_folder': 'docs',
 
-    'logo': 'logo.png',
+    ''
+    ''
+    '': 'logo.png',
     'logo_pat': '<img style="padding:15px;width:100px;float:left;" src="{}"/>',
 
     'description': 'Lorem Ipsum is simply dummy text of the printing and'

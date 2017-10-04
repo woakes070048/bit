@@ -27,6 +27,7 @@ from sqlalchemy.dialects import postgresql
 
 # flask
 from flask_appbuilder import Model
+from flask import flash
 
 from flask_babel import lazy_gettext as _
 
@@ -37,6 +38,7 @@ from superset import sm
 from superset.connectors.base.models import BaseDatasource
 from superset.utils import get_celery_app
 from superset.utils import send_email_smtp
+from superset.connectors.sqla.models import SqlaTable
 
 # locale
 from bit.utils.etl_status import EtlStatus
@@ -115,6 +117,7 @@ class EtlPeriod(object):
         if r:
             return str(r[0][1])
         return str(cls.CHOICES[cls.EMPTY][1])
+
 
 # need for Superset metrics permissions
 class EtlMetric(Model):
@@ -239,6 +242,19 @@ class EtlTable(Model, BaseDatasource):
     def exist_table(self):
         return self.sql_table_name in self.all_table_names()
 
+    def cccc(self):
+
+        sqt = SqlaTable()
+
+        # sqt.database =
+        sqt.schema=self.schema
+        sqt.table_name=self.sql_table_name
+        sqt.database = 'main'
+        sqt.schema = 'main'
+        sqt.table_name = 'main'
+
+        return False
+
     def create_table(self):
 
         if not self.schema:
@@ -295,8 +311,10 @@ class EtlTable(Model, BaseDatasource):
 
     @staticmethod
     def etl_not_valid(err=''):
-        logging.exception(err)
-        raise Exception('etl_not_valid')
+        # logging.exception(err)
+        raise Exception('[etl_not_valid] {}'.format(
+            err[:1000]
+        ))
 
         # set to invalid etl original table
         # self.is_valid = False
@@ -426,6 +444,8 @@ class EtlTable(Model, BaseDatasource):
     def run(etl_id=0):
         """Run Etl Sync Data From DataSource to DWH."""
 
+        logging.info('Run Sync {}')
+
         try:
             etl = db.session.query(EtlTable).filter_by(id=etl_id).one()
         except Exception as e:
@@ -441,6 +461,7 @@ class EtlTable(Model, BaseDatasource):
             with etl.local_engine.connect() as local_con:
                 # connect to locale database
                 rrs = remote_con.execute(etl.remote_sql_count()).fetchone()
+                logging.info(etl.remote_sql_count())
                 r_rows_count = rrs['rows_count']
 
                 while True:
@@ -452,7 +473,7 @@ class EtlTable(Model, BaseDatasource):
                     sql = etl.etl_sql()
 
                     rrs = remote_con.execute(sql)
-
+                    logging.info(sql)
                     cursor_description = rrs.cursor.description
                     # count remote cols
                     remote_cols_count = len(cursor_description)
@@ -553,6 +574,8 @@ class EtlTable(Model, BaseDatasource):
 
         if connector_type == 'SQL':
 
+            logging.info('SQL')
+
             sql = self.etl_sql()
 
             locale_cols_count = self.get_columns_from_etl_table()
@@ -561,10 +584,11 @@ class EtlTable(Model, BaseDatasource):
             add_rows = []
             with self.remote_engine.connect() as remote_con:
                 rs = remote_con.execute(self.remote_sql_count()).fetchone()
+                logging.info(self.remote_sql_count())
                 r_rows_count = rs['rows_count']
 
                 rs = remote_con.execute(sql)
-
+                logging.info(sql)
                 cursor_description = rs.cursor.description
                 remote_cols_count = len(cursor_description)
 
@@ -621,46 +645,28 @@ class EtlTable(Model, BaseDatasource):
 
             if self.sync_field == 'date':
 
-                # from_date = (datetime.utcnow() - timedelta(
-                #     days=self.chunk_size
-                # )).date().isoformat()
-                #
-                # to_date = (datetime.utcnow()).date().isoformat()
-                #
-
                 from_date = (
                     dateutil_parser.parse(self.sync_last) + timedelta(days=1)
                 )
 
+                if from_date.date() >= datetime.utcnow().date():
+                    flash(_('Day not started'), 'danger')
+                    raise Exception('Day not started')
+
                 to_date = from_date + timedelta(days=self.chunk_size)
-
                 if to_date.date() >= datetime.utcnow().date():
-                    to_date = to_date - timedelta(days=1)
-
-
-
-
-                # from_date = (dateutil_parser.parse(self.sync_last) + timedelta(
-                #     days=self.chunk_size
-                # )).date().isoformat()
-                #
-                # to_date = from_date
-
+                    to_date = datetime.utcnow() - timedelta(days=1)
 
                 self.connector.get_data(
                     self.datasource,
                     from_date.date().isoformat(),
                     to_date.date().isoformat(),
                 )
-                rows = self.connector.data
 
-                logging.info(type(rows))
-                logging.info(rows)
+                rows = self.connector.data
 
                 # add rows
                 add_rows = []
-
-                logging.info(rows.len())
 
                 for row in petl.dicts(rows).list():
                     add_row = {}
@@ -805,7 +811,7 @@ class EtlTable(Model, BaseDatasource):
         if self.table:
             return 'SQL'
         elif self.connector and self.datasource and (
-                    self.datasource in self.connector.get_admin_data_sources):
+                    self.datasource in self.connector.get_list_data_sources()):
             return 'CONNECTOR'
         return False
 
@@ -815,6 +821,8 @@ class EtlTable(Model, BaseDatasource):
         columns = []
 
         connector_type = self.get_connector_type()
+
+        logging.info(connector_type)
 
         if connector_type == 'SQL':
             for column in self.table.columns:
@@ -878,19 +886,10 @@ class EtlTable(Model, BaseDatasource):
                             eval('sa.Text()')
                         )
                     )
+            logging.info(columns)
             return columns
 
         raise 'Cols not found'
-
-            # # delete
-            # columns.append(
-            #     Column(
-            #         'name',
-            #         eval('sa.Text()')
-            #     )
-            # )
-
-        # return columns
 
     # def valiate_columns(self):
     #     """Validate if exsist columnt in table clause """

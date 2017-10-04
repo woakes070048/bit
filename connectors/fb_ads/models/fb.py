@@ -179,7 +179,7 @@ class AdAccount(Model, ModelHelper):
         self.connector.api
         fb_ad_account = fbAdAccount(fbid=self.native_id)
 
-        DATA_SOURCE_START_DATE = '2017-08-01'
+        DATA_SOURCE_START_DATE = '2017-08-18'
 
         now = datetime.datetime.now().date()
         yesterday = now - datetime.timedelta(days=1)
@@ -202,7 +202,7 @@ class AdAccount(Model, ModelHelper):
             # fbAdsInsights.Breakdowns.gender,
         )
 
-        report_name = '1234'
+        report_name = '1321fsdfds2'
 
         logger.info(
             "Run report '{0}' since: {1} until: {2}".format(report_name, since,

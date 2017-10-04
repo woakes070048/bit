@@ -13,7 +13,7 @@ from superset import appbuilder
 from superset.views.base import SupersetModelView, DeleteMixin
 
 # local
-from .. models.ad import AdWordsConnector
+from .. models.connector import AdWordsConnector
 
 
 class AdWordsConnectorView(SupersetModelView, DeleteMixin):

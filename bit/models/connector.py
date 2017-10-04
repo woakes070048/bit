@@ -40,12 +40,11 @@ class Connector(Model):
         """Object name."""
         return '{} [{}]'.format(self.type, self.name)
 
-    def get_data_sources(self):
+    def get_list_data_sources(self):
         """Return All Data Sources for connector"""
         raise NotImplementedError()
 
-    @property
-    def get_admin_data_sources(self):
+    def admin_data_sources(self):
         """Return All Data Sources for connector"""
         raise NotImplementedError()
 

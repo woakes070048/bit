@@ -32,7 +32,7 @@ from .. storages.google.permissions import GoogleDriveFilePermission
 from .. storages.google.permissions import GoogleDrivePermissionRole
 from .. storages.google.permissions import GoogleDrivePermissionType
 
-from  . ad import AdWordsConnector
+from  . connector import AdWordsConnector
 
 DB_PREFIX = '{}'.format(
     app.config.get('APP_DB_PREFIX', 'bit'),

@@ -1,47 +1,60 @@
-# python 2to3
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
 # system
-import zlib
-
-import logging
 import os
-import urllib3
+from io import BytesIO
+
 import petl
+import zlib
+import logging
 from datetime import datetime, timedelta
+import zipfile
 
 # sqlalchemy
 from sqlalchemy import Column
-from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 # superset
+from superset import app
 from superset import cache
 
 # local
-from bit.models import Connector
 from bit.utils.conversions import sqla_python_types
+from bit.models import Connector
+
+# from . import  GoogleDriveStorage
+
+from .. datasources.campaign import CampaignPerformanceReportDataSource
+
 from .. settings import CONNECTOR_INFO
 
+DB_PREFIX = '{}'.format(
+    app.config.get('APP_DB_PREFIX', 'bit'),
+)
 
-class AppsFlyerConnector(Connector):
+class AdWordsConnector(Connector):
+    """AdWords: Model Auth connector"""
 
-    __tablename__ = 'bit_{}_connector'.format(CONNECTOR_INFO.get('key'))
+    __tablename__ = '{}_adwords_connector'.format(DB_PREFIX)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'adwords'
+    }
 
     # ForeignKey to Connector (Parent)
     id = Column(Integer, ForeignKey('bit_connectors.id'), primary_key=True)
 
-    __mapper_args__ = {
-        'polymorphic_identity': CONNECTOR_INFO.get('key')
-    }
 
-    app_id = Column(String(255))
-    api_token = Column(String(255))
-    url_pat = Column(String(255))
+    # change to text field and use storage as package
+    storage = relationship(
+        'GoogleDriveStorage',
+        # uselist=False,
+        cascade='all,delete',
+        back_populates='connector'
+    )
+
+    storage_path = Column(String(255), default='bit')
 
     # no db fields/methods
 
@@ -65,12 +78,9 @@ class AppsFlyerConnector(Connector):
         return CONNECTOR_INFO.get('logo_pat', '').format(logo)
 
     def connector_info(self):
-
-        logging.info('{} info'.format(self.connector_name))
-
         """ String: connector info. """
         # change url
-        html = '<h4><a href="/appsflyerconnectorview/list/">{name}</a></h4>' \
+        html = '<h4><a href="/adwordsconnectorview/list/">{name}</a></h4>' \
                '{logo}' \
                '<p>{description}</p>'.format(
             name=self.connector_name(),
@@ -96,44 +106,12 @@ class AppsFlyerConnector(Connector):
 
     # sync
     report_folder = 'reports/{}'.format(CONNECTOR_INFO.get('key'))
-    report_filename_pat = report_folder + '/{app_id}_{report}_{from_date}_{to_date}.csv'
+    report_filename_pat = report_folder + '/{report}_{from_date}_{to_date}.csv'
     data = {}
     report = ''
     from_date = ''
     to_date = ''
 
-    def web_test(self):
-
-        logging.info('web_test[{}]'.format(CONNECTOR_INFO.get('key')))
-
-        return True
-
-    def get_report_url(self, report='', from_date='', to_date=''):
-        # String: url by report name and dates
-
-        if not (report or from_date or to_date):
-            return False
-
-        return self.url_pat.format(
-            app_id=self.app_id,
-            api_token=self.api_token,
-            report=report,
-            from_date=from_date,
-            to_date=to_date
-        )
-
-    def get_report_filename(self, report='', from_date='', to_date=''):
-        # String: get_report_filename by report name and dates
-
-        if not (report or from_date or to_date):
-            return False
-
-        return self.report_filename_pat.format(
-            app_id=self.app_id,
-            report=report,
-            from_date=from_date,
-            to_date=to_date
-        )
 
     def get_columns(self, report='', from_date='', to_date=''):
 
@@ -186,89 +164,104 @@ class AppsFlyerConnector(Connector):
 
         return columns
 
-    def download(self, url=''):
+
+    def get_report_filename(self, report='', from_date='', to_date=''):
+        # String: get_report_filename by report name and dates
+
+        if not (report or from_date or to_date):
+            return False
+
+        return self.report_filename_pat.format(
+            report=report,
+            from_date=from_date,
+            to_date=to_date
+        )
+
+
+    def download(self, path=''):
+
+        logging.info('Start download from google drive')
+        logging.info(path)
 
         report_filename = self.get_report_filename(
             self.report, self.from_date, self.to_date
         )
-
         if cache:
-            cache_key = url
+            cache_key = path
             cache_timeout = CONNECTOR_INFO.get('report_cache_timeout', 60 * 60)
 
             z_report = cache.get(cache_key)
             if z_report is not None:
-                return petl.io.fromcsv(petl.MemorySource(
+                return petl.io.fromjson(petl.MemorySource(
                     zlib.decompress(z_report)
                 ))
 
-            logging.info('Download Report from {}'.format(url))
+            ###############################
 
-            http = urllib3.PoolManager()
-            r = http.request(
-                'GET',
-                url,
-                retries=urllib3.Retry(
-                    redirect = 2,
-                    backoff_factor=2,
-                )
-            )
-            if r.status == 200:
-                report = r.data
-                r.release_conn()
+            logging.info('Download Report from {}'.format(path))
 
-                z_report = zlib.compress(report)
-                cache.set(cache_key, z_report, timeout=cache_timeout)
+            storage = self.storage[0]
+            storage.init()
 
-                return petl.io.fromcsv(petl.MemorySource(report))
-            elif r.status == 403:
-                raise Exception(r.data)
-            else:
-                logging.info(r.data)
-                logging.info(r.status)
-                logging.info(r.headers)
+            fname = '{}.json'.format(self.report)
 
+            with storage.open(path) as archive_file:
+                with zipfile.ZipFile(archive_file) as zip_file:
+                    # logging.info(fname)
+                    report = zip_file.read(fname)
+                    z_report = zlib.compress(report)
+                    cache.set(cache_key, z_report, timeout=cache_timeout)
+
+                    return petl.io.fromjson(petl.MemorySource(report))
         else:
             # move to init
             if not os.path.exists(self.report_folder):
                 os.makedirs(self.report_folder)
 
             if not os.path.exists(report_filename):
-                logging.info('Download Report from {}'.format(url))
-                http = urllib3.PoolManager()
-                r = http.request(
-                    'GET',
-                    url,
-                    retries=urllib3.Retry(
-                        redirect=2,
-                        backoff_factor=2,
-                    )
-                )
-                if r.status == 200:
-                    with open(report_filename, 'wb') as f:
-                        f.write(r.data)
-                    r.release_conn()
+                logging.info('Download Report from {}'.format(path))
+                storage = self.storage[0]
+                storage.init()
 
-                    logging.info('Read from {}'.format(report_filename))
-                    report = petl.io.fromcsv(report_filename)
-                    return report
+                fname = '{}.json'.format(self.report)
+
+                with storage.open(path) as archive_file:
+                    with zipfile.ZipFile(archive_file) as zip_file:
+                        # logging.info(fname)
+                        report = zip_file.read(fname)
+
+                        with open(report_filename, 'wb') as f:
+                            f.write(report)
+
+                        logging.info('Read from {}'.format(report_filename))
+                        report = petl.io.fromjson(report_filename)
+                        return report
         return []
+
 
     def get_data(self, report='', from_date='', to_date=''):
 
         if not (report or from_date or to_date):
             return False
+        # report_url = self.get_report_url(report, from_date, to_date)
+
 
         self.report = report
         self.from_date = from_date
         self.to_date = to_date
 
-        report_url = self.get_report_url(report, from_date, to_date)
+        self.from_date = '2017-08-01'
 
-        if not report_url:
+        dir = '{}/{}'.format(
+            self.storage_path,
+            self.from_date
+        )
+        archive_path = '{}/{}.zip'.format(dir, self.report)
+
+        if not archive_path:
             return False
 
-        rdata = self.download(report_url)
+        rdata = self.download(archive_path)
 
         if rdata:
 
@@ -282,10 +275,31 @@ class AppsFlyerConnector(Connector):
                 })
 
             # logging.info(converts)
-
-
             # logging.info(rdata[1])
 
-
             self.data = petl.convert(rdata, converts)
+
             # logging.info(self.data[1])
+
+
+    # TODO DELETE THIS
+    def get_data_sources(self):
+        storage = self.storage[0]
+        storage.init()
+
+        dss = (
+            CampaignPerformanceReportDataSource,
+        )
+
+        for klass in dss:
+            # change to get first storage
+            yield klass(storage=storage, path=self.storage_path)
+
+    def sync_adwords_campaign_performance_report(self):
+
+        logging.info('Start sync adwords')
+
+        for ds in self.get_data_sources():
+            logging.info("Processing data source: {0}".format(ds.name))
+            ds.sync()
+        return {}

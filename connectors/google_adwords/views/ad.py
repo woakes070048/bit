@@ -19,7 +19,7 @@ from superset.views.base import SupersetModelView, DeleteMixin
 
 
 # local
-from .. models.ad import AdWordsConnector
+from .. models.connector import AdWordsConnector
 from .. models.campaign import CampaignPerformanceReport
 
 

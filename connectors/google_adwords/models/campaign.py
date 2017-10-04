@@ -26,6 +26,7 @@ class CampaignPerformanceReport(Model, ModelHelper):
     __tablename__ = 'bit_adwords_campaign_performance_report'  # sql table name
 
     id = Column(Integer, primary_key=True)
+    campaign_id = Column(String(255))
     campaign_name = Column(String(255))
     cost = Column(Numeric, nullable=True)
 
