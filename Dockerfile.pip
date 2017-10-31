@@ -1,0 +1,24 @@
+FROM alpine:latest
+
+# Install python, pip and libs 
+RUN apk add --update python \
+    ca-certificates \
+    py-pip \
+    python-dev \
+    bash \
+    libffi-dev \
+    libressl-dev \
+    cyrus-sasl-dev \
+    musl-dev \
+    gcc \
+    g++ \
+    mariadb-dev \
+    postgresql-dev
+
+
+# Copy files to work dir
+ADD . /var/www/bit
+WORKDIR /var/www/bit
+
+# Install dependencies
+RUN pip install -r /var/www/bit/requirements.txt

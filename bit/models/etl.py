@@ -165,6 +165,7 @@ class EtlTable(Model, BaseDatasource):
     is_valid = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     is_scheduled = Column(Boolean, default=False)
+    save_in_prt = Column(Boolean, default=False)
 
     # Relation
     # ForeignKey to Connector (Parent)
@@ -814,7 +815,6 @@ class EtlTable(Model, BaseDatasource):
                     self.datasource in self.connector.get_list_data_sources()):
             return 'CONNECTOR'
         return False
-
 
     def get_columns(self):
 

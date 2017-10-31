@@ -1,12 +1,23 @@
-app_id = xxxxxxxxxxxxx
-api_token = xxxxxxxxxxxxx
-from = 2017-08-01
-to = 2017-08-10
-
-
 APIs
 https://support.appsflyer.com/hc/en-us/sections/201695053-APIs
 
+app_id = id
+api_token = token
+from = 2017-08-01
+to = 2017-08-10
+
+Media Source:
+
+Facebook Ads -> facebook
+googleadwords_int -> adwords
+
+
+
+
+https://hq.appsflyer.com/export/master_report/v4?api_token=ab592f53-d284-4615-8eca-45cf721fadbd&app_id=id1004615216&from=2017-08-01&to=2017-08-01
+
+
+https://hq.appsflyer.com/export/master_report/v4?api_token=[api_token]&app_id=[app_id]&from=[from_date]&to=[to_date]
 
 Raw Data Reports https://support.appsflyer.com/hc/en-us/articles/208387843-Raw-Data-Reports-V5
 

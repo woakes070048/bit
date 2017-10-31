@@ -6,7 +6,7 @@ except ImportError:
 
 # system
 import zlib
-
+import hashlib
 import logging
 import os
 import urllib3
@@ -45,8 +45,9 @@ class AppsFlyerConnector(Connector):
 
     # no db fields/methods
 
-    data_sources = CONNECTOR_INFO.get('reports')
-    fields_types = CONNECTOR_INFO.get('fields_types')
+    data_sources = CONNECTOR_INFO.get('reports', {})
+    fields_types = CONNECTOR_INFO.get('fields_types', {})
+    replace_values = CONNECTOR_INFO.get('replace_values', {})
 
     def connector_name(self):
         """ String: connector name. """
@@ -66,7 +67,7 @@ class AppsFlyerConnector(Connector):
 
     def connector_info(self):
 
-        logging.info('{} info'.format(self.connector_name))
+        # logging.info('{} info'.format(self.connector_name))
 
         """ String: connector info. """
         # change url
@@ -96,7 +97,7 @@ class AppsFlyerConnector(Connector):
 
     # sync
     report_folder = 'reports/{}'.format(CONNECTOR_INFO.get('key'))
-    report_filename_pat = report_folder + '/{app_id}_{report}_{from_date}_{to_date}.csv'
+    report_filename_pat = report_folder + '/{hash}.csv'
     data = {}
     report = ''
     from_date = ''
@@ -105,35 +106,39 @@ class AppsFlyerConnector(Connector):
     def web_test(self):
 
         logging.info('web_test[{}]'.format(CONNECTOR_INFO.get('key')))
-
         return True
 
-    def get_report_url(self, report='', from_date='', to_date=''):
+    def get_report_urls(self, report='', from_date='', to_date=''):
         # String: url by report name and dates
 
         if not (report or from_date or to_date):
             return False
 
-        return self.url_pat.format(
-            app_id=self.app_id,
-            api_token=self.api_token,
-            report=report,
-            from_date=from_date,
-            to_date=to_date
-        )
+        urls = []
 
-    def get_report_filename(self, report='', from_date='', to_date=''):
+        if self.app_id:
+            app_ids = self.app_id.split(',')
+
+            for app_id in app_ids:
+                if app_id:
+                    urls.append(
+                        self.url_pat.format(
+                            app_id=app_id,
+                            api_token=self.api_token,
+                            report=report,
+                            from_date=from_date,
+                            to_date=to_date
+                        )
+                    )
+        return urls
+
+    def get_report_filename(self, hash=''):
         # String: get_report_filename by report name and dates
 
-        if not (report or from_date or to_date):
+        if not hash:
             return False
 
-        return self.report_filename_pat.format(
-            app_id=self.app_id,
-            report=report,
-            from_date=from_date,
-            to_date=to_date
-        )
+        return self.report_filename_pat.format(hash=hash)
 
     def get_columns(self, report='', from_date='', to_date=''):
 
@@ -157,20 +162,7 @@ class AppsFlyerConnector(Connector):
         if not (report or from_date or to_date):
             return False
 
-        columns = [
-            {
-                'name': 'name',
-                'type': 'string',
-            },
-            {
-                'name': 'date',
-                'type': 'date',
-            },
-            {
-                'name': 'cost',
-                'type': 'float',
-            },
-        ]
+        columns = []
 
         self.get_data(self.report, self.from_date, self.to_date)
 
@@ -186,56 +178,45 @@ class AppsFlyerConnector(Connector):
 
         return columns
 
-    def download(self, url=''):
+    def download(self, urls=[]):
 
-        report_filename = self.get_report_filename(
-            self.report, self.from_date, self.to_date
-        )
+        # timeout setting for requests
+        # timeout = urllib3.Timeout(connect=2.0, read=7.0)
+        # http = urllib3.PoolManager(timeout=timeout)
+        http = urllib3.PoolManager()
 
-        if cache:
-            cache_key = url
-            cache_timeout = CONNECTOR_INFO.get('report_cache_timeout', 60 * 60)
+        report_data = []
 
-            z_report = cache.get(cache_key)
-            if z_report is not None:
-                return petl.io.fromcsv(petl.MemorySource(
-                    zlib.decompress(z_report)
-                ))
+        for url in urls:
 
-            logging.info('Download Report from {}'.format(url))
+            report_filename = self.get_report_filename(
+                hashlib.md5(url).hexdigest())
 
-            http = urllib3.PoolManager()
-            r = http.request(
-                'GET',
-                url,
-                retries=urllib3.Retry(
-                    redirect = 2,
-                    backoff_factor=2,
+            if cache:
+                cache_key = url
+                cache_timeout = CONNECTOR_INFO.get(
+                    'report_cache_timeout', 60 * 60
                 )
-            )
-            if r.status == 200:
-                report = r.data
-                r.release_conn()
 
-                z_report = zlib.compress(report)
-                cache.set(cache_key, z_report, timeout=cache_timeout)
+                z_report = cache.get(cache_key)
+                if z_report is not None:
 
-                return petl.io.fromcsv(petl.MemorySource(report))
-            elif r.status == 403:
-                raise Exception(r.data)
-            else:
-                logging.info(r.data)
-                logging.info(r.status)
-                logging.info(r.headers)
+                    if not report_data:
+                        report_data = petl.io.fromcsv(petl.MemorySource(
+                            zlib.decompress(z_report)
+                        ))
 
-        else:
-            # move to init
-            if not os.path.exists(self.report_folder):
-                os.makedirs(self.report_folder)
+                    report_data = petl.stack(
+                        report_data,
+                        petl.io.fromcsv(petl.MemorySource(
+                            zlib.decompress(z_report)
+                        ))
+                    )
 
-            if not os.path.exists(report_filename):
+                    continue
+
                 logging.info('Download Report from {}'.format(url))
-                http = urllib3.PoolManager()
+
                 r = http.request(
                     'GET',
                     url,
@@ -245,14 +226,58 @@ class AppsFlyerConnector(Connector):
                     )
                 )
                 if r.status == 200:
-                    with open(report_filename, 'wb') as f:
-                        f.write(r.data)
+                    report = r.data
                     r.release_conn()
 
-                    logging.info('Read from {}'.format(report_filename))
-                    report = petl.io.fromcsv(report_filename)
-                    return report
-        return []
+                    z_report = zlib.compress(report)
+                    cache.set(cache_key, z_report, timeout=cache_timeout)
+
+                    # return petl.io.fromcsv(petl.MemorySource(report))
+
+                    if not report_data:
+                        report_data = petl.io.fromcsv(
+                            petl.MemorySource(report))
+
+                    report_data = petl.stack(
+                        report_data,
+                        petl.io.fromcsv(petl.MemorySource(report))
+                    )
+                elif r.status == 403:
+                    raise Exception(r.data)
+                else:
+                    logging.info(r.data)
+                    logging.info(r.status)
+                    logging.info(r.headers)
+
+            else:
+                # move to init
+                if not os.path.exists(self.report_folder):
+                    os.makedirs(self.report_folder)
+
+                if not os.path.exists(report_filename):
+                    logging.info('Download Report from {}'.format(url))
+
+                    r = http.request(
+                        'GET',
+                        url,
+                        retries=urllib3.Retry(
+                            redirect=2,
+                            backoff_factor=2,
+                        )
+                    )
+                    if r.status == 200:
+                        with open(report_filename, 'wb') as f:
+                            f.write(r.data)
+                        r.release_conn()
+
+                        logging.info('Read from {}'.format(report_filename))
+                        if not report_data:
+                            report_data = petl.io.fromcsv(report_filename)
+                        report_data = petl.stack(
+                            report_data,
+                            petl.io.fromcsv(report_filename)
+                        )
+        return report_data
 
     def get_data(self, report='', from_date='', to_date=''):
 
@@ -263,29 +288,32 @@ class AppsFlyerConnector(Connector):
         self.from_date = from_date
         self.to_date = to_date
 
-        report_url = self.get_report_url(report, from_date, to_date)
+        report_urls = self.get_report_urls(report, from_date, to_date)
 
-        if not report_url:
+        if not report_urls:
             return False
 
-        rdata = self.download(report_url)
+        rdata = self.download(report_urls)
 
         if rdata:
 
             converts = {}
 
-            for col in rdata[0]:
-                converts.update({
-                    col: sqla_python_types.get(
-                        self.fields_types.get(col, 'String'), str
-                    ),
-                })
-
-            # logging.info(converts)
-
-
-            # logging.info(rdata[1])
-
+            if len(self.fields_types):
+                for col in rdata[0]:
+                    converts.update({
+                        col: sqla_python_types.get(
+                            self.fields_types.get(col, 'String'), str
+                        ),
+                    })
 
             self.data = petl.convert(rdata, converts)
-            # logging.info(self.data[1])
+
+            if len(self.replace_values):
+                for field in self.replace_values:
+                    if len(self.replace_values[field]):
+                        self.data = petl.convert(
+                            self.data, field, self.replace_values[field]
+                        )
+                        # logging.info(field)
+                        # logging.info(self.replace_values[field])

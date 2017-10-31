@@ -23,8 +23,8 @@ REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
 # CeleryConfig
 class CeleryConfig(object):
     BROKER_URL = 'redis://{}:{}/0'.format(REDIS_ADDR, REDIS_PORT)
-    CELERY_TIMEZONE = 'UTC'
     CELERY_IMPORTS = ('superset.sql_lab', 'bit.tasks')
+    CELERY_TIMEZONE = 'UTC'
     CELERYBEAT_SCHEDULE = {
         'add-every-30-seconds': {
             'task': 'bit.tasks.run_etl',
@@ -33,7 +33,8 @@ class CeleryConfig(object):
         },
     }
     CELERY_RESULT_BACKEND = 'redis://{}:{}/0'.format(REDIS_ADDR, REDIS_PORT)
-    CELERY_ANNOTATIONS = {'tasks.add': {'rate_limit': '10/s'}}
+    # CELERY_ANNOTATIONS = {'tasks.add': {'rate_limit': '10/s'}}
+
 
 CELERY_CONFIG = CeleryConfig
 

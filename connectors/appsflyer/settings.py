@@ -3,7 +3,7 @@ from packaging.version import Version
 
 
 CONNECTOR_INFO = {
-    'version': Version('1.0'),
+    'version': Version('1.1'),
 
     'name': 'AppsFlyer',
 
@@ -184,5 +184,19 @@ CONNECTOR_INFO = {
         'Total Revenue': 'Numeric',
         'User Agent': 'String',
         'WIFI': 'Boolean',
-    }
+    },
+
+    'replace_values': {
+        # replace values by field name
+        # and key-value pair
+
+        'Media Source': {
+            'Facebook Ads': 'facebook',
+            'googleadwords_int': 'adwords',
+        },
+        # 'Media Source2': {
+        #     'Facebook Ads2': 'facebook2',
+        #     'googleadwords_int2': 'adwords2',
+        # },
+    },
 }

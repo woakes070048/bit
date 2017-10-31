@@ -64,23 +64,25 @@ class EtlTableView(SupersetModelView, DeleteMixin):
     datamodel = SQLAInterface(EtlTable)
 
     list_columns = [
-        'connector.type', 'connector.name', 'table.database', 'table', 'datasource', 'sql_table_name',
-        'sync_field', 'sync_last', 'sync_last_time',
-        'progress', 'status', 'repr_sync_periodic', 'sync_next_time',
-        'is_valid', 'is_active', 'is_scheduled'
+        'connector.type', 'connector.name', 'table.database', 'table',
+        'datasource', 'sql_table_name', 'save_in_prt', 'sync_field',
+        'sync_last', 'sync_last_time', 'progress', 'status',
+        'repr_sync_periodic', 'sync_next_time', 'is_valid', 'is_active',
+        'is_scheduled'
         # 'table.sql'
     ]
 
     add_columns = [
-        'connector', 'table', 'datasource', 'name', 'sync_field', 'sync_last',
-        'chunk_size', 'sync_periodic', 'sync_periodic_hour'
+        'connector', 'table', 'datasource', 'name', 'save_in_prt',
+        'sync_field', 'sync_last', 'chunk_size', 'sync_periodic',
+        'sync_periodic_hour'
     ]
 
     edit_schema = ['schema']
 
     edit_columns = [
-        'sync_field', 'sync_last', 'chunk_size', 'sync_periodic',
-        'sync_periodic_hour', 'is_active'
+        'save_in_prt', 'sync_field', 'sync_last', 'chunk_size',
+        'sync_periodic', 'sync_periodic_hour', 'is_active'
     ]
 
     edit_columns = edit_columns
@@ -195,7 +197,7 @@ class EtlTableView(SupersetModelView, DeleteMixin):
         obj.sync_next_time = obj.get_next_sync()
 
         # test
-        obj.cccc()
+        # obj.cccc()
 
 
 

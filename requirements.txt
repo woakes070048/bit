@@ -11,4 +11,5 @@ redis==2.10.5 # To cache
 -r connectors/requirements.txt
 
 # superset==0.18.5
-superset==0.19.1
+# superset==0.19.1
+superset==0.20.4

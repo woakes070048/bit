@@ -5,6 +5,7 @@ from babel.numbers import parse_decimal
 # superset
 from superset import db
 
+
 class DataAdapter(object):
 
     model = None
@@ -25,8 +26,12 @@ class DataAdapter(object):
 
     @classmethod
     def string_to_float(cls, value):
+
         if value is None:
             return None
+
+        value = value.replace(',', '')
+
         if not len(value):
             return 0.0
 
@@ -49,6 +54,8 @@ class DataAdapter(object):
     def string_to_decimal(cls, value):
         if value is None:
             return None
+
+        value = value.replace(',', '')
 
         if not len(value):
             return Decimal.from_float(0.0)

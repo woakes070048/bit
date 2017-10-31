@@ -140,6 +140,8 @@ class DataSource(object):
             for klass in self.models:
                 for ch in chunk:
 
+                    ch['Cost'] = ch['Cost'].replace(',', '')
+
                     try:
                         cost = float(ch['Cost'])
                     except:
