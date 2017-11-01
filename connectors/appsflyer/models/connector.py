@@ -48,6 +48,7 @@ class AppsFlyerConnector(Connector):
     data_sources = CONNECTOR_INFO.get('reports', {})
     fields_types = CONNECTOR_INFO.get('fields_types', {})
     replace_values = CONNECTOR_INFO.get('replace_values', {})
+    replace_in_values = CONNECTOR_INFO.get('replace_in_values', {})
 
     def connector_name(self):
         """ String: connector name. """
@@ -293,27 +294,56 @@ class AppsFlyerConnector(Connector):
         if not report_urls:
             return False
 
-        rdata = self.download(report_urls)
+        raw_data = self.download(report_urls)
 
-        if rdata:
+        if not raw_data:
+            self.data = []
+            return False
 
-            converts = {}
+        self.data = raw_data
 
-            if len(self.fields_types):
-                for col in rdata[0]:
-                    converts.update({
-                        col: sqla_python_types.get(
-                            self.fields_types.get(col, 'String'), str
-                        ),
-                    })
-
-            self.data = petl.convert(rdata, converts)
-
-            if len(self.replace_values):
-                for field in self.replace_values:
-                    if len(self.replace_values[field]):
+        if len(self.replace_values):
+            for field in self.replace_values:
+                if len(self.replace_values[field]):
+                    try:
                         self.data = petl.convert(
                             self.data, field, self.replace_values[field]
                         )
-                        # logging.info(field)
-                        # logging.info(self.replace_values[field])
+                    except Exception as e:
+                        # no field exist
+                        logging.exception('No {} field exist'.format(
+                            field
+                        ))
+                        pass
+
+        if len(self.replace_in_values):
+            for field in self.replace_in_values:
+                if len(self.replace_in_values[field]):
+                    try:
+                        self.data = petl.convert(
+                            self.data,
+                            field,
+                            'replace',
+                            self.replace_in_values[field][0],
+                            self.replace_in_values[field][1]
+                        )
+                    except Exception as e:
+                        # no field exist
+                        logging.exception('No {} field exist'.format(
+                            field
+                        ))
+                        pass
+
+        if len(self.fields_types):
+
+            converts = {}
+
+            for col in self.data[0]:
+                converts.update({
+                    col: sqla_python_types.get(
+                        self.fields_types.get(col, 'String'),
+                        str
+                    ),
+                })
+
+            self.data = petl.convert(self.data, converts)

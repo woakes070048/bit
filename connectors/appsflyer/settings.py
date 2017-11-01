@@ -199,4 +199,11 @@ CONNECTOR_INFO = {
         #     'googleadwords_int2': 'adwords2',
         # },
     },
+
+    'replace_in_values': {
+        # replace in values by field name
+        # and key-value pair
+
+        # 'Cost': [',', ''],
+    },
 }

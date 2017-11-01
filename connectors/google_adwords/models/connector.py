@@ -58,8 +58,10 @@ class AdWordsConnector(Connector):
 
     # no db fields/methods
 
-    data_sources = CONNECTOR_INFO.get('reports')
-    fields_types = CONNECTOR_INFO.get('fields_types')
+    data_sources = CONNECTOR_INFO.get('reports', {})
+    fields_types = CONNECTOR_INFO.get('fields_types', {})
+    replace_values = CONNECTOR_INFO.get('replace_values', {})
+    replace_in_values = CONNECTOR_INFO.get('replace_in_values', {})
 
     def connector_name(self):
         """ String: connector name. """
@@ -135,20 +137,7 @@ class AdWordsConnector(Connector):
         if not (report or from_date or to_date):
             return False
 
-        columns = [
-            {
-                'name': 'name',
-                'type': 'string',
-            },
-            {
-                'name': 'date',
-                'type': 'date',
-            },
-            {
-                'name': 'cost',
-                'type': 'float',
-            },
-        ]
+        columns = []
 
         self.get_data(self.report, self.from_date, self.to_date)
 
@@ -177,7 +166,6 @@ class AdWordsConnector(Connector):
             to_date=to_date
         )
 
-
     def download(self, path=''):
 
         logging.info('Start download from google drive')
@@ -196,7 +184,6 @@ class AdWordsConnector(Connector):
                     zlib.decompress(z_report)
                 ))
 
-            ###############################
 
             logging.info('Download Report from {}'.format(path))
 
@@ -211,7 +198,6 @@ class AdWordsConnector(Connector):
                     report = zip_file.read(fname)
                     z_report = zlib.compress(report)
                     cache.set(cache_key, z_report, timeout=cache_timeout)
-
                     return petl.io.fromjson(petl.MemorySource(report))
         else:
             # move to init
@@ -238,49 +224,80 @@ class AdWordsConnector(Connector):
                         return report
         return []
 
-
     def get_data(self, report='', from_date='', to_date=''):
 
         if not (report or from_date or to_date):
             return False
         # report_url = self.get_report_url(report, from_date, to_date)
 
-
         self.report = report
         self.from_date = from_date
         self.to_date = to_date
 
-        self.from_date = '2017-08-01'
+        # self.from_date = '2017-09-16'
 
-        dir = '{}/{}'.format(
+        folder = '{}/{}'.format(
             self.storage_path,
             self.from_date
         )
-        archive_path = '{}/{}.zip'.format(dir, self.report)
+        archive_path = '{}/{}.zip'.format(folder, self.report)
 
         if not archive_path:
             return False
 
-        rdata = self.download(archive_path)
+        raw_data = self.download(archive_path)
 
-        if rdata:
+        if not raw_data:
+            self.data = []
+            return False
+
+        self.data = raw_data
+
+        if len(self.replace_values):
+            for field in self.replace_values:
+                if len(self.replace_values[field]):
+                    try:
+                        self.data = petl.convert(
+                            self.data, field, self.replace_values[field]
+                        )
+                    except Exception as e:
+                        # no field exist
+                        logging.exception('No {} field exist'.format(
+                            field
+                        ))
+                        pass
+
+        if len(self.replace_in_values):
+            for field in self.replace_in_values:
+                if len(self.replace_in_values[field]):
+                    try:
+                        self.data = petl.convert(
+                            self.data,
+                            field,
+                            'replace',
+                            self.replace_in_values[field][0],
+                            self.replace_in_values[field][1]
+                        )
+                    except Exception as e:
+                        # no field exist
+                        logging.exception('No {} field exist'.format(
+                            field
+                        ))
+                        pass
+
+        if len(self.fields_types):
 
             converts = {}
 
-            for col in rdata[0]:
+            for col in self.data[0]:
                 converts.update({
                     col: sqla_python_types.get(
-                        self.fields_types.get(col, 'String'), str
+                        self.fields_types.get(col, 'String'),
+                        str
                     ),
                 })
 
-            # logging.info(converts)
-            # logging.info(rdata[1])
-
-            self.data = petl.convert(rdata, converts)
-
-            # logging.info(self.data[1])
-
+            self.data = petl.convert(self.data, converts)
 
     # TODO DELETE THIS
     def get_data_sources(self):

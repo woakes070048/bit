@@ -104,5 +104,23 @@ CONNECTOR_INFO = {
         'LocationType': 'String',
         'MetroCriteriaId': 'String',
         'QueryMatchTypeWithVariant': 'String',
-    }
+    },
+
+    'replace_values': {
+        # replace values by field name
+        # and key-value pair
+
+        # 'Media Source': {
+        #     'Facebook Ads': 'facebook',
+        #     'googleadwords_int': 'adwords',
+        # },
+    },
+
+    'replace_in_values': {
+        # replace in values by field name
+        # and key-value pair
+
+        'Cost': [',', ''],
+        'Conversions': [',', ''],
+    },
 }

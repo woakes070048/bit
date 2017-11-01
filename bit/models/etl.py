@@ -170,7 +170,6 @@ class EtlTable(Model, BaseDatasource):
     # Relation
     # ForeignKey to Connector (Parent)
 
-
     connector_id = Column(Integer, ForeignKey('bit_connectors.id'))
     connector = relationship(
         'Connector',
@@ -658,6 +657,15 @@ class EtlTable(Model, BaseDatasource):
                 if to_date.date() >= datetime.utcnow().date():
                     to_date = datetime.utcnow() - timedelta(days=1)
 
+                lmsg = '{} save_in_prt() -> {} -> {}'.format(
+                    self.datasource,
+                    self.save_in_prt,
+                    from_date.date().isoformat(),
+                    to_date.date().isoformat()
+                )
+
+                logging.info(lmsg)
+
                 self.connector.get_data(
                     self.datasource,
                     from_date.date().isoformat(),
@@ -666,13 +674,17 @@ class EtlTable(Model, BaseDatasource):
 
                 rows = self.connector.data
 
+                # logging.info(rows)
+
                 # add rows
                 add_rows = []
 
                 for row in petl.dicts(rows).list():
                     add_row = {}
                     for column, value in row.items():
-                        add_row.update({self.clear_column_name(str(column)): value})
+                        add_row.update(
+                            {self.clear_column_name(str(column)): value}
+                        )
                     add_rows.append(add_row)
 
                 if not add_rows:
@@ -694,6 +706,16 @@ class EtlTable(Model, BaseDatasource):
                         )
                     except Exception as e:
                         self.etl_not_valid(str(e))
+
+                # insert to ptr
+                # TODO REWRIE
+                if self.save_in_prt:
+                    # logging.info(self.save_in_prt)
+                    # logging.info(self.connector.type)
+                    if self.connector.type == 'adwords':
+                        # from data_adapter import AdwordsPerformanceReportAdapter
+                        from connectors.google_adwords.adapters import CampaignPerformanceReportAdapter
+                        CampaignPerformanceReportAdapter.bulk_adapt(add_rows)
 
                 try:
                     # last = from_date

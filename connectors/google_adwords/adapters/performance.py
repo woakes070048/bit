@@ -10,15 +10,18 @@ class AdwordsPerformanceReportAdapter(PerformanceReportAdapter):
 
     @property
     def date(self):
-        return self.string_to_date(self.data['Date'])
+        # return self.string_to_date(self.data['date'])
+        return self.data['date']
 
     @property
     def measurements(self):
-        return self.data
+        # return self.data
+        return {}
 
     @property
     def clicks(self):
-        return self.string_to_float(self.data['Clicks'])
+        # return self.string_to_float(self.data['clicks'])
+        return self.data['clicks']
 
     @property
     def name(self):
@@ -26,24 +29,27 @@ class AdwordsPerformanceReportAdapter(PerformanceReportAdapter):
 
     @property
     def impressions(self):
-        return self.string_to_float(self.data['Impressions'])
+        # return self.string_to_float(self.data['impressions'])
+        return self.data['impressions']
 
     @property
     def campaign_id(self):
-        return self.data['CampaignId']
+        return self.data['campaignid']
 
     @property
     def cost(self):
-        # return self.string_to_decimal(self.data['Cost'])
-        return self.string_to_float(self.data['Cost'])
+        # return self.string_to_float(self.data['cost'])
+        return self.data['cost']
 
     @property
     def mobile_app_installs(self):
-        return self.string_to_float(self.data['Conversions'])
+        # return self.string_to_float(self.data['conversions'])
+        return self.data['conversions']
 
     @property
     def mobile_app_purchases(self):
-        return self.string_to_float(self.data['Impressions'])
+        # return self.string_to_float(self.data['impressions'])
+        return self.data['impressions']
 
     @property
     def cost_per_mobile_app_installs(self):
@@ -62,11 +68,12 @@ class AdwordsPerformanceReportAdapter(PerformanceReportAdapter):
 
     @property
     def campaign_name(self):
-        return self.data['CampaignName']
+        return self.data['campaignname']
 
     @property
     def conversions(self):
-        return self.string_to_float(self.data['Conversions'])
+        # return self.string_to_float(self.data['conversions'])
+        return self.data['conversions']
 
     @property
     def breakdowns(self):
@@ -74,7 +81,7 @@ class AdwordsPerformanceReportAdapter(PerformanceReportAdapter):
 
     @property
     def device(self):
-        return self.data['Device']
+        return self.data['device']
 
     @property
     def campaign_source(self):
