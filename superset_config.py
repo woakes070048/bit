@@ -60,16 +60,15 @@ CACHE_CONFIG = {
 ETL_ASYNC_TIME_LIMIT_SEC = 60 * 60 * 6
 
 # local static
-static_page = Blueprint(
-    'bit',
-    __name__,
-    url_prefix='/static',
-    template_folder='bit/templates',
-    static_folder='bit/static/bit',
-    static_url_path='/bit'
-)
+# static_page = Blueprint(
+#     'bit',
+#     __name__,
+#     url_prefix='/static',
+#     template_folder='bit/templates',
+#     static_folder='bit/static/bit',
+# )
 
-BLUEPRINTS = [static_page]
+# BLUEPRINTS = [static_page]
 
 try:
     from flask_appbuilder_config import *  # noqa
