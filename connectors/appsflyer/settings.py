@@ -3,7 +3,7 @@ from packaging.version import Version
 
 
 CONNECTOR_INFO = {
-    'version': Version('1.1'),
+    'version': Version('1.5'),
 
     'name': 'AppsFlyer',
 

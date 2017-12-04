@@ -3,7 +3,7 @@ from packaging.version import Version
 
 
 CONNECTOR_INFO = {
-    'version': Version('1.0'),
+    'version': Version('1.5'),
 
     'name': 'Google AdWords',
 
@@ -15,9 +15,7 @@ CONNECTOR_INFO = {
 
     'docs_folder': 'docs',
 
-    ''
-    ''
-    '': 'logo.png',
+    'logo': 'logo.png',
     'logo_pat': '<img style="padding:15px;width:100px;float:left;" src="{}"/>',
 
     'description': 'Lorem Ipsum is simply dummy text of the printing and'

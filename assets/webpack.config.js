@@ -8,7 +8,9 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const APP_DIR = path.resolve(__dirname, './');
 
 // output dir
-const BUILD_DIR = path.resolve(__dirname, './dist');
+// const BUILD_DIR = path.resolve(__dirname, './dist');
+const BUILD_DIR = path.resolve(__dirname, '../bit/static/assets/dist');
+
 
 const config = {
   node: {

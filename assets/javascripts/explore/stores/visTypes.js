@@ -1221,6 +1221,45 @@ export const visTypes = {
       },
     },
   },
+  table_zod: {
+    label: t('Table For Zodiac View'),
+    controlPanelSections: [
+      {
+        label: t('GROUP BY'),
+        description: t('Use this section if you want a query that aggregates'),
+        controlSetRows: [
+          ['groupby'],
+          ['metrics', 'percent_metrics'],
+          ['include_time'],
+          ['timeseries_limit_metric', 'order_desc'],
+        ],
+      },
+      {
+        label: t('NOT GROUPED BY'),
+        description: t('Use this section if you want to query atomic rows'),
+        controlSetRows: [
+          ['all_columns'],
+          ['order_by_cols'],
+        ],
+      },
+      {
+        label: t('Options'),
+        controlSetRows: [
+          ['table_timestamp_format'],
+          ['row_limit', 'page_length'],
+          ['include_search', 'table_filter'],
+        ],
+      },
+    ],
+    controlOverrides: {
+      metrics: {
+        validators: [],
+      },
+      time_grain_sqla: {
+        default: null,
+      },
+    },
+  },
   filter_box_with_pre_filter: {
     label: t('Filters with pre filter'),
     controlPanelSections: [

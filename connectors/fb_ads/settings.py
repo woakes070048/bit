@@ -15,7 +15,7 @@ CONNECTOR_KEY = 'facebook'  # rename to facebook_ads and migrate db tables
 
 CONNECTOR_INFO = {
 
-    'version': Version('1.0'),
+    'version': Version('1.5'),
 
     'table_prefix': '{}_{}'.format(
         DB_PREFIX,
