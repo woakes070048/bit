@@ -15,10 +15,12 @@ RUN apk add --update python \
     mariadb-dev \
     postgresql-dev
 
-
-# Copy files to work dir
-ADD . /var/www/bit
+# Copy requirements to work dir
 WORKDIR /var/www/bit
+ADD requirements.txt /var/www/bit
+ADD /connectors/requirements.txt /var/www/bit/connectors/
+ADD /connectors/fb_ads/requirements.txt /var/www/bit/connectors/fb_ads/
+ADD /connectors/google_adwords/requirements.txt /var/www/bit/connectors/google_adwords/
 
 # Install dependencies
 RUN pip install -r /var/www/bit/requirements.txt

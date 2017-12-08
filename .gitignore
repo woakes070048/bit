@@ -100,3 +100,4 @@ ENV/
 /reports
 /celerybeat-schedule
 /assets/node_modules
+/docker-compose-denis.yml
