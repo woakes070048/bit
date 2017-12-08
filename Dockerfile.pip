@@ -19,6 +19,8 @@ RUN apk add --update python \
 WORKDIR /var/www/bit
 ADD requirements.txt /var/www/bit
 ADD /connectors/requirements.txt /var/www/bit/connectors/
+ADD /connectors/appsflyer/requirements.txt /var/www/bit/connectors/fb_ads/
+ADD /connectors/db_sql/requirements.txt /var/www/bit/connectors/fb_ads/
 ADD /connectors/fb_ads/requirements.txt /var/www/bit/connectors/fb_ads/
 ADD /connectors/google_adwords/requirements.txt /var/www/bit/connectors/google_adwords/
 

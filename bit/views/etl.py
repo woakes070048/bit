@@ -274,6 +274,7 @@ appbuilder.add_view(
     category_label=__('Reports')
 )
 
+
 class DataSourceInfoView(SupersetModelView, DeleteMixin):
     """View For Connector Model."""
 
@@ -292,7 +293,7 @@ appbuilder.add_view(
     DataSourceInfoView,
     'DataSourceInfo',
     icon='fa-table',
-    category='Sources',
+    category='Reports',
     category_icon='fa-refresh',
     category_label=__('ETL')
 )
