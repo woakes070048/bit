@@ -226,6 +226,15 @@ class AdWordsConnector(Connector):
 
     def get_data(self, report='', from_date='', to_date=''):
 
+
+        """
+        
+        report 
+        
+        """
+
+
+
         if not (report or from_date or to_date):
             return False
         # report_url = self.get_report_url(report, from_date, to_date)
