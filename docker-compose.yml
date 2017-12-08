@@ -23,7 +23,7 @@ services:
         environment:
             - REDIS_ADDR=redis
             - REDIS_PORT=6379
-        command: /bin/sh -c 'python bit.py runserver -d'
+        command: /bin/sh -c 'python bitstart.py runserver'
         links:
             - redis
         networks:
@@ -34,37 +34,52 @@ services:
             replicas: 1
             restart_policy:
                 condition: on-failure
+            placement:
+                constraints: [node.role == manager]
         environment:
             - C_FORCE_ROOT=true
             - REDIS_ADDR=redis
             - REDIS_PORT=6379
-        command: /bin/sh -c 'python bit.py worker --workers=1'
-        deploy:
-            placement:
-                constraints: [node.role == manager]
+        command: /bin/sh -c 'python bitstart.py worker --workers=6'
         links:
             - redis
         networks:
             - webnet
-#    celerybeat:
-#        image: chiter/codesmart-bit:aws
-#        deploy:
-#            replicas: 1
-#            restart_policy:
-#                condition: on-failure
-#        environment:
-#            - REDIS_ADDR=redis
-#            - REDIS_PORT=6379
-#        # user: root
-#        command: /bin/sh -c 'python bit.py beat'
-#        links:
-#            - redis
-#        deploy:
-#            placement:
-#                constraints: [node.role == manager]
-#        # depends_on:
-#        #     - web
-#        networks:
-#            - webnet
+    celerybeat:
+        image: chiter/codesmart-bit:aws
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+            placement:
+                constraints: [node.role == manager]
+        environment:
+            - C_FORCE_ROOT=true
+            - REDIS_ADDR=redis
+            - REDIS_PORT=6379
+        command: /bin/sh -c 'python bitstart.py beat'
+        links:
+            - redis
+        networks:
+            - webnet
+    celeryflower:
+        image: chiter/codesmart-bit:aws
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+            placement:
+                constraints: [node.role == manager]
+        ports:
+            - "5555:5555"
+        environment:
+            - C_FORCE_ROOT=true
+            - REDIS_ADDR=redis
+            - REDIS_PORT=6379
+        command: /bin/sh -c 'python bitstart.py flower -a 0.0.0.0'
+        links:
+            - redis
+        networks:
+            - webnet
 networks:
     webnet:
