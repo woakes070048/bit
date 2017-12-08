@@ -165,7 +165,15 @@ class EtlTableView(SupersetModelView, DeleteMixin):
             'Sync data for this table', 'fa-play')
     def sync(self, item):
         """Call sync etl."""
-        item[0].sync()
+        item[0].sync_delay()
+
+        return redirect('etltableview/list/')
+
+    @action('test_sync_etl', 'test_sync_etl',
+            'Sync data for this table', 'fa-play')
+    def test_sync_etl(self, item):
+        """Call test_sync etl."""
+        item[0].test_sync_etl()
 
         return redirect('etltableview/list/')
 
@@ -193,13 +201,11 @@ class EtlTableView(SupersetModelView, DeleteMixin):
 
         # if obj.table_id:
         #     # Create table
+
         obj.create_table()
         obj.sync_next_time = obj.get_next_sync()
-
         # test
         # obj.cccc()
-
-
 
     # def post_add(self):
     #     # create ds table
@@ -286,7 +292,7 @@ appbuilder.add_view(
     DataSourceInfoView,
     'DataSourceInfo',
     icon='fa-table',
-    category='ETL',
+    category='Sources',
     category_icon='fa-refresh',
     category_label=__('ETL')
 )

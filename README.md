@@ -43,7 +43,6 @@ python bit.py db upgrade
 # Create default roles and permissions
 python bit.py init
 
-
 # Load some data to play with
 # python bit.py load_examples
 ```
