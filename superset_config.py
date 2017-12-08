@@ -2,7 +2,8 @@ import os
 from datetime import timedelta
 from collections import OrderedDict
 
-from flask import Blueprint
+# from flask import Blueprint
+from kombu import Exchange, Queue
 from werkzeug.contrib.cache import RedisCache
 
 
@@ -33,7 +34,21 @@ class CeleryConfig(object):
         },
     }
     CELERY_RESULT_BACKEND = 'redis://{}:{}/0'.format(REDIS_ADDR, REDIS_PORT)
-    # CELERY_ANNOTATIONS = {'tasks.add': {'rate_limit': '10/s'}}
+    CELERY_ANNOTATIONS = {'tasks.add': {'rate_limit': '10/s'}}
+    # CELERY_QUEUES = (
+    #     Queue('high', Exchange('high'), routing_key='high'),
+    #     Queue('normal', Exchange('normal'), routing_key='normal'),
+    #     Queue('low', Exchange('low'), routing_key='low'),
+    # )
+    # CELERY_DEFAULT_QUEUE = 'normal'
+    # CELERY_DEFAULT_EXCHANGE = 'normal'
+    # CELERY_DEFAULT_ROUTING_KEY = 'normal'
+    # CELERY_ROUTES = {
+    #     # -- HIGH PRIORITY QUEUE -- #
+    #     'bit.tasks.run_etl': {'queue': 'high'},
+    #     # -- LOW PRIORITY QUEUE -- #
+    #     # 'myapp.tasks.close_session': {'queue': 'low'},
+    # }
 
 
 CELERY_CONFIG = CeleryConfig
