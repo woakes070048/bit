@@ -70,9 +70,9 @@ fb_ad_set_fields = frozenset([
     fbAdSet.Field.optimization_goal,
     fbAdSet.Field.status,
     fbAdSet.Field.bid_amount,
-    fbAdSet.Field.frequency_cap,
-    fbAdSet.Field.frequency_cap_reset_period,
-    fbAdSet.Field.lifetime_frequency_cap,
+    # fbAdSet.Field.frequency_cap,  # remove in 2.11.1
+    # fbAdSet.Field.frequency_cap_reset_period,  # remove in 2.11.1
+    # fbAdSet.Field.lifetime_frequency_cap,  # remove in 2.11.1
     fbAdSet.Field.lifetime_imps,
     fbAdSet.Field.is_autobid,
     fbAdSet.Field.is_average_price_pacing,
@@ -183,7 +183,7 @@ fb_ads_insight_fields = frozenset([
     fbAdsInsights.Field.unique_link_clicks_ctr,
     fbAdsInsights.Field.unique_social_clicks,
     fbAdsInsights.Field.video_10_sec_watched_actions,
-    fbAdsInsights.Field.video_15_sec_watched_actions,
+    # fbAdsInsights.Field.video_15_sec_watched_actions,  # remove in 2.11.1
     fbAdsInsights.Field.video_30_sec_watched_actions,
     fbAdsInsights.Field.video_avg_percent_watched_actions,
     fbAdsInsights.Field.video_avg_time_watched_actions,

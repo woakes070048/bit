@@ -1,3 +1,4 @@
-# TODO move to connector
+-r appsflyer/requirements.txt
+-r db_sql/requirements.txt
 -r fb_ads/requirements.txt
 -r google_adwords/requirements.txt
