@@ -190,10 +190,13 @@ class AppsFlyerConnector(Connector):
 
         for url in urls:
 
+            # print(url)
+
             report_filename = self.get_report_filename(
                 hashlib.md5(url).hexdigest())
 
             if cache:
+                # print('use cache')
                 cache_key = url
                 cache_timeout = CONNECTOR_INFO.get(
                     'report_cache_timeout', 60 * 60
@@ -202,17 +205,20 @@ class AppsFlyerConnector(Connector):
                 z_report = cache.get(cache_key)
                 if z_report is not None:
 
-                    if not report_data:
-                        report_data = petl.io.fromcsv(petl.MemorySource(
-                            zlib.decompress(z_report)
-                        ))
+                    new_report_data = petl.io.fromcsv(petl.MemorySource(
+                        zlib.decompress(z_report)
+                    ))
 
-                    report_data = petl.stack(
-                        report_data,
-                        petl.io.fromcsv(petl.MemorySource(
-                            zlib.decompress(z_report)
-                        ))
-                    )
+                    # print(len(new_report_data))
+
+                    if not report_data:
+                        # print('NEw cat')
+                        report_data = new_report_data
+                    else:
+                        report_data = petl.cat(
+                            report_data,
+                            new_report_data
+                        )
 
                     continue
 
@@ -235,14 +241,17 @@ class AppsFlyerConnector(Connector):
 
                     # return petl.io.fromcsv(petl.MemorySource(report))
 
-                    if not report_data:
-                        report_data = petl.io.fromcsv(
-                            petl.MemorySource(report))
-
-                    report_data = petl.stack(
-                        report_data,
-                        petl.io.fromcsv(petl.MemorySource(report))
+                    new_report_data = petl.io.fromcsv(
+                        petl.MemorySource(report)
                     )
+                    # print(len(new_report_data))
+                    if not report_data:
+                        report_data = new_report_data
+                    else:
+                        report_data = petl.cat(
+                            report_data,
+                            new_report_data
+                        )
                 elif r.status == 403:
                     raise Exception(r.data)
                 else:
@@ -252,6 +261,8 @@ class AppsFlyerConnector(Connector):
 
             else:
                 # move to init
+
+                # print('Not cache')
                 if not os.path.exists(self.report_folder):
                     os.makedirs(self.report_folder)
 
@@ -272,12 +283,16 @@ class AppsFlyerConnector(Connector):
                         r.release_conn()
 
                         logging.info('Read from {}'.format(report_filename))
+
+                        new_report_data = petl.io.fromcsv(report_filename)
+
                         if not report_data:
-                            report_data = petl.io.fromcsv(report_filename)
-                        report_data = petl.stack(
-                            report_data,
-                            petl.io.fromcsv(report_filename)
-                        )
+                            report_data = new_report_data
+                        else:
+                            report_data = petl.cat(
+                                report_data,
+                                new_report_data
+                            )
         return report_data
 
     def get_data(self, report='', from_date='', to_date=''):
@@ -301,6 +316,8 @@ class AppsFlyerConnector(Connector):
             return False
 
         self.data = raw_data
+
+        # print(len(self.data))
 
         if len(self.replace_values):
             for field in self.replace_values:
