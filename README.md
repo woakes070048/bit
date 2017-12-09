@@ -35,23 +35,23 @@ pip install -r win_requirements.txt
 fabmanager create-admin --app superset
 
 # 1 Migrations
-python bit.py db migrate
+python bitstart.py db migrate
 
 # 2 Initialize the database
-python bit.py db upgrade
+python bitstart.py db upgrade
 
 # Create default roles and permissions
-python bit.py init
+python bitstart.py init
 
 # Load some data to play with
-# python bit.py load_examples
+# python bitstart.py load_examples
 ```
 
 # Run server
 ```
 # Linux 
 # Start the web server on port 8088, use -p to bind to another port
-python bit.py runserver
+python bitstart.py runserver
 ```
 
 ```
@@ -64,5 +64,5 @@ python bit.py runserver
 ```
 # Windows OR development web server, use the -d switch
 
-python bit.py runserver -d
+python bitstart.py runserver -d
 ```

@@ -17,10 +17,16 @@ RUN apk add --update python \
 
 # Copy requirements to work dir
 WORKDIR /var/www/bit
+
+ADD /incubator-superset/setup.py /var/www/bit/incubator-superset/
+ADD /incubator-superset/superset/assets/package.json /var/www/bit/incubator-superset/superset/assets/package.json
+ADD /incubator-superset/superset/bin/superset /var/www/bit/incubator-superset/superset/bin/superset
+
+
 ADD requirements.txt /var/www/bit
 ADD /connectors/requirements.txt /var/www/bit/connectors/
-ADD /connectors/appsflyer/requirements.txt /var/www/bit/connectors/fb_ads/
-ADD /connectors/db_sql/requirements.txt /var/www/bit/connectors/fb_ads/
+ADD /connectors/appsflyer/requirements.txt /var/www/bit/connectors/appsflyer/
+ADD /connectors/db_sql/requirements.txt /var/www/bit/connectors/db_sql/
 ADD /connectors/fb_ads/requirements.txt /var/www/bit/connectors/fb_ads/
 ADD /connectors/google_adwords/requirements.txt /var/www/bit/connectors/google_adwords/
 

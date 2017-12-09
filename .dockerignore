@@ -1,0 +1,12 @@
+# idea
+.idea
+
+# node packages
+**node_modules
+
+# Byte-compiled / optimized / DLL files
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+
+incubator-superset/superset/data
