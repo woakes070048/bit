@@ -166,6 +166,7 @@ class EtlTable(Model, BaseDatasource):
     status = Column(String(16), default=EtlStatus.STOPPED)
     # progress = Column(Integer, default=0)  # 1..100
     progress = Column(Numeric, default=0)  # 1..100
+    calculate_progress = Column(Boolean, default=True)
     is_valid = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     is_scheduled = Column(Boolean, default=False)
@@ -397,7 +398,7 @@ class EtlTable(Model, BaseDatasource):
             try:
                 sql = 'SELECT * FROM {table} ' \
                       'WHERE {pk}> \'{pk_last}\' ' \
-                      'ORDER BY {pk};'.\
+                      'ORDER BY {pk} ASC;'.\
                     format(
                         table=self.table.table_name,
                         pk=self.sync_field,
@@ -423,7 +424,7 @@ class EtlTable(Model, BaseDatasource):
             try:
                 sql = 'SELECT * FROM ({sql}) AS CHITER ' \
                       'WHERE {pk}> \'{pk_last}\' ' \
-                      'ORDER BY {pk};'.\
+                      'ORDER BY {pk} ASC;'.\
                     format(
                         sql=self.clear_sql(),
                         pk=self.sync_field,
@@ -515,7 +516,7 @@ class EtlTable(Model, BaseDatasource):
 
         # count columns in local table
         etl_table_columns_count = self.get_columns_from_etl_table()
-        # print('etl_table_columns_count {}'.format(etl_table_columns_count))
+        print('etl_table_columns_count {}'.format(etl_table_columns_count))
 
         # connect to remote database
         with self.remote_engine.connect() as remote_connection:
@@ -525,20 +526,20 @@ class EtlTable(Model, BaseDatasource):
                 locale_table_rows_count = local_connection.execute(
                     self.locale_sql_count()).fetchone()['rows_count']
 
-                # print('locale_table_rows_count {}'.format(
-                #     locale_table_rows_count))
+                print('locale_table_rows_count {}'.format(
+                    locale_table_rows_count))
 
                 remote_table_rows_count = remote_connection.execute(
                     self.remote_sql_count()).fetchone()['rows_count']
 
-                # print('remote_table_rows_count {}'.format(
-                #     remote_table_rows_count))
+                print('remote_table_rows_count {}'.format(
+                    remote_table_rows_count))
 
                 # ----------------------------
 
                 remote_sql = self.remote_etl_sql()
 
-                # print(remote_sql)
+                print(remote_sql)
 
                 rc_result = remote_connection.execution_options(
                     stream_results=True
@@ -551,8 +552,8 @@ class EtlTable(Model, BaseDatasource):
                 # count remote cols
                 remote_table_columns_count = len(rt_columns_names)
 
-                # print('remote_table_columns_count {}'.format(
-                #     remote_table_columns_count))
+                print('remote_table_columns_count {}'.format(
+                    remote_table_columns_count))
 
                 # compare local and remote columns count
                 if remote_table_columns_count != etl_table_columns_count:
@@ -564,7 +565,7 @@ class EtlTable(Model, BaseDatasource):
                     if self.status == EtlStatus.STOPPED:
                         break
 
-                    # print('next {} rows'.format(self.chunk_size))
+                    print('next {} rows'.format(self.chunk_size))
                     chunks = rc_cursor.fetchmany(self.chunk_size)
 
                     result_count = len(chunks)

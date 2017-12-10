@@ -16,6 +16,15 @@ from bit.models import EtlTable
 celery_app = get_celery_app(app.config)
 logger = getLogger(__name__)
 
+from celery.signals import worker_process_init
+
+
+@worker_process_init.connect
+def on_fork_close_session(**kwargs):
+    if db.session is not None:
+        db.session.close()
+        db.engine.dispose()
+
 
 @shared_task
 def run_etl():
@@ -40,9 +49,8 @@ def run_etl():
     for etl_task in etl_tasks:
         etl_task.is_scheduled = True
         logger.info(etl_task)
-        async_etl.delay(etl_id=etl_task.id)
         db_session.merge(etl_task)
-
+        async_etl.delay(etl_id=etl_task.id)
     db_session.commit()
     return True
 
