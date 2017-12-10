@@ -26,6 +26,7 @@ class CeleryConfig(object):
     BROKER_URL = 'redis://{}:{}/0'.format(REDIS_ADDR, REDIS_PORT)
     CELERY_IMPORTS = ('superset.sql_lab', 'bit.tasks')
     CELERY_TIMEZONE = 'UTC'
+    CELERY_LOGLEVEL = 'INFO'
     CELERYBEAT_SCHEDULE = {
         'add-every-30-seconds': {
             'task': 'bit.tasks.run_etl',

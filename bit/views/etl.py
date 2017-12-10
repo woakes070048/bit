@@ -169,14 +169,6 @@ class EtlTableView(SupersetModelView, DeleteMixin):
 
         return redirect('etltableview/list/')
 
-    @action('test_sync_etl', 'test_sync_etl',
-            'Sync data for this table', 'fa-play')
-    def test_sync_etl(self, item):
-        """Call test_sync etl."""
-        item[0].test_sync_etl()
-
-        return redirect('etltableview/list/')
-
     @action('sync_etl_stop', 'sync stop',
             'Stop sync data for this table', 'fa-stop')
     def sync_stop(self, item):

@@ -25,7 +25,7 @@ class ModelHelper(object):
         )
         """
 
-        created = False
+        # created = False
         defaults = defaults or {}
 
         if remove_id and 'id' in defaults:

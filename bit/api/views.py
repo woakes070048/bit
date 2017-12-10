@@ -12,7 +12,6 @@ from superset import db
 
 from bit.models.analytics import Identify
 
-print('api init')
 
 blueprint_api = Blueprint('api', __name__, url_prefix='/api')
 

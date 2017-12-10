@@ -2,6 +2,7 @@
 from logging import getLogger
 from datetime import datetime, timedelta
 from dateutil import parser as dateutil_parser
+from collections import namedtuple
 import sqlparse
 import petl
 
@@ -27,6 +28,7 @@ from sqlalchemy.schema import CreateTable
 from sqlalchemy.schema import DropTable
 
 # superset
+from superset import utils
 from superset import app
 from superset.utils import get_celery_app
 
@@ -47,27 +49,20 @@ from superset.utils import send_email_smtp
 from superset.connectors.sqla.models import SqlaTable
 
 # locale
-from bitstart import app_manager
+# from bitstart import app_manager
 from bit.utils.etl_status import EtlStatus
 
 
 logger = getLogger(__name__)
-
 celery_app = get_celery_app(app.config)
-
-
 stats_logger = app.config.get('STATS_LOGGER')
-
 MODULE_NAME = 'etl'
-
 DB_PREFIX = '{}_{}'.format(
     app.config.get('APP_DB_PREFIX', 'bit'),
     MODULE_NAME
 )
-
 # Default schema for etl tables
 DB_ETL_SCHEMA = 'bit_etl'
-
 # Default Prefix for etl tables
 DB_ETL_PREFIX = '_etl'
 
@@ -157,7 +152,6 @@ class EtlTable(Model, BaseDatasource):
 
     datasource = Column(String(250))
 
-
     # by default we save all new tables in etl schema. on future we can allow
     # to save for any schema user set
     schema = Column(String(255), default=DB_ETL_SCHEMA)
@@ -203,6 +197,17 @@ class EtlTable(Model, BaseDatasource):
 
     def __repr__(self):
         return self.name
+
+    @property
+    def schema_perm(self):
+        """Returns schema permission if present, database one otherwise."""
+        return 'bit_etl'
+        # return utils.get_schema_perm(self.database, self.schema)
+
+    def get_perm(self):
+        return (
+            '[{obj.sql_table_name}]'
+            '(id:{obj.id})').format(obj=self)
 
     @property
     def repr_sync_periodic(self):
@@ -313,33 +318,45 @@ class EtlTable(Model, BaseDatasource):
                 autoload_with=self.local_engine)
 
         except Exception:
+
             raise Exception(
                 "Table doesn't seem to exist in the specified database, "
                 "couldn't fetch column information")
 
         return len(table.columns)
 
-    @staticmethod
-    def etl_not_valid(err=''):
-        # logging.exception(err)
-        raise Exception('[etl_not_valid] {}'.format(
-            err[:1000]
-        ))
+    def etl_not_valid(self, err=''):
 
+        self.is_valid = False
+        self.is_scheduled = False
+        db.session.merge(self)
+        db.session.commit()
+
+        msq = '[etl_not_valid] {}'.format(
+            err[:1000]
+        )
+
+
+        print(msq)
+        logger.exception(msq)
 
         # TODO SET USER OBJECT
-        # send user email
 
+        # send user email
         email = 'chiter2008@gmail.com'
         subject = 'Etl table ({}) not valid'.format(self.sql_table_name)
 
         # move to template emails
-        message = 'Etl table <b>({table_name})</b>, has changed.<br/>Please login ' \
+        message = 'Etl table <b>({table_name})</b>, ' \
+                  'has changed.<br/>Please login ' \
                   'and repair or create new table.'.format(
-                        table_name = self.sql_table_name
+                        table_name=self.sql_table_name
                   )
         send_email_smtp(email, subject, message, app.config,
                         dryrun=not app.config.get('EMAIL_NOTIFICATIONS'))
+        raise Exception('[etl_not_valid] {}'.format(
+            err[:1000]
+        ))
 
     def clear_sql(self):
         """"Remove orders and limits from query"""
@@ -374,144 +391,44 @@ class EtlTable(Model, BaseDatasource):
         # logging.info(sql_new_statement)
         return sql_new_statement
 
-    def etl_sql(self):
-        sql = ''
+    def remote_etl_sql(self):
         if not self.table.sql:
             """Use table name."""
             try:
-                # sql = select().where(
-                #     column(self.sync_field) > self.sync_last
-                # ).order_by(
-                #     self.sync_field
-                # ).select_from(
-                #     table(self.table.table_name)
-                # )
+                sql = 'SELECT * FROM {table} ' \
+                      'WHERE {pk}> \'{pk_last}\' ' \
+                      'ORDER BY {pk};'.\
+                    format(
+                        table=self.table.table_name,
+                        pk=self.sync_field,
+                        pk_last=self.sync_last
+                    )
 
-
-
-                sql = text(
-                    'SELECT * FROM :table '
-                    'WHERE :pk > :last_pk '
-                    'ORDER BY :pk;'
-                ).bindparams(
-                    bindparam(
-                        key='table',
-                        value='bit_etl._etl_cities',
-                        type_=String
-                    ),
-                    bindparam(
-                        key='pk',
-                        value=self.sync_field,
-                        type_=String  # TODO Get field from COLUMNS
-                    ),
-                    bindparam(
-                        key='last_pk',
-                        value=self.sync_last,
-                        type_=String  # TODO Get field from COLUMNS
-                    ),
-                )
-
-                # sql = text(
-                #     'SELECT * FROM :table '
-                #     'WHERE :pk > :last_pk '
-                #     'ORDER BY :pk;'
-                # ).bindparams(
-                #     bindparam(
-                #         key='pk',
-                #         value=self.sync_field,
-                #         type_=String  # TODO Get field from COLUMNS
-                #     ),
-                #     bindparam(
-                #         key='last_pk',
-                #         value=self.sync_last,
-                #         type_=String  # TODO Get field from COLUMNS
-                #     ),
-                # )
                 # sql = 'SELECT * FROM {table} ' \
                 #       'WHERE {pk}> \'{pk_last}\' ' \
-                #       'ORDER BY {pk} LIMIT {limit};'.\
+                #       'ORDER BY {pk} LIMIT {limit};'. \
                 #     format(
-                #         table=self.table.table_name,
-                #         pk=self.sync_field,
-                #         pk_last=self.sync_last,
-                #         limit=self.chunk_size
-                #     )
+                #     table=self.table.table_name,
+                #     pk=self.sync_field,
+                #     pk_last=self.sync_last,
+                #     limit=self.chunk_size
+                # )
+
+                return sql
             except Exception as e:
                 logger.exception(str(e))
+                raise
         else:
             """Use custom sql query."""
-
-            # MACROS
-            # try:
-            #     template_processor = get_template_processor(
-            #         database=database, query=query)
-            #     executed_sql = template_processor.process_template(
-            #         executed_sql)
-            # except Exception as e:
-            #     logging.exception(e)
-            #     msg = "Template rendering failed: " + utils.error_msg_from_exception(
-            #         e)
-            #     return handle_error(msg)
-
             try:
-                # sql = select([
-                #     text(self.clear_sql().replace('SELECT', ''))
-                # ]).where(
-                #     column(self.sync_field) > self.sync_last
-                # ).order_by(
-                #     self.sync_field
-                # )
-
-                sql = text(
-                    'SELECT * FROM :table '
-                    'WHERE :pk > :last_pk '
-                    'ORDER BY :pk;'
-                ).bindparams(
-                    bindparam(
-                        key='table',
-                        value='_etl_cities',
-                        type_=String
-                    ),
-                    bindparam(
-                        key='pk',
-                        value=self.sync_field,
-                        type_=String  # TODO Get field from COLUMNS
-                    ),
-                    bindparam(
-                        key='last_pk',
-                        value=self.sync_last,
-                        type_=String  # TODO Get field from COLUMNS
-                    ),
-                )
-
-                # Query(
-
-                # sql_query = '{query} ' \
-                #     'WHERE :pk > :last_pk ' \
-                #     'ORDER BY :pk;'.format(
-                #         query=self.clear_sql()
-                #     )
-                # sql = text(sql_query).bindparams(
-                #     bindparam(
-                #         key='pk',
-                #         quote=False,
-                #         value=self.sync_field,
-                #         type_=Integer  # TODO Get field from COLUMNS
-                #     ),
-                #     bindparam(
-                #         key='last_pk',
-                #         value=self.sync_last,
-                #         type_=Integer  # TODO Get field from COLUMNS
-                #     ),
-                # )
-                # sql = text(
-                #     self.clear_sql()
-                # ).where(
-                #     user_table.c.name == bindparam('username')
-                # )
-
-                # TODO WRITE MACROS SUPPORT
-
+                sql = 'SELECT * FROM ({sql}) AS CHITER ' \
+                      'WHERE {pk}> \'{pk_last}\' ' \
+                      'ORDER BY {pk};'.\
+                    format(
+                        sql=self.clear_sql(),
+                        pk=self.sync_field,
+                        pk_last=self.sync_last
+                    )
                 # sql = 'SELECT * FROM ({sql}) AS CHITER ' \
                 #       'WHERE {pk}> \'{pk_last}\' ' \
                 #       'ORDER BY {pk} LIMIT {limit};'.\
@@ -521,10 +438,20 @@ class EtlTable(Model, BaseDatasource):
                 #         pk_last=self.sync_last,
                 #         limit=self.chunk_size
                 #     )
+
+                # TODO WRITE MACROS SUPPORT
+
+                # sql = select([
+                #     text(self.clear_sql().replace('SELECT', ''))
+                # ]).where(
+                #     column(self.sync_field) > self.sync_last
+                # ).order_by(
+                #     self.sync_field
+                # )
+                return sql
             except Exception as e:
                 logger.exception(str(e))
-
-        return sql
+                raise
 
     def remote_sql_count(self):
         sql = ''
@@ -570,223 +497,157 @@ class EtlTable(Model, BaseDatasource):
 
         return sql
 
-    def test_sync_etl(self):
+    def sync(self):
 
-        logger.info('test_sync_etl')
+        msq = 'Run Sync EtlId ({})'.format(self.id)
+        print(msq)
+        logger.info(msq)
 
-        # tmpsql = """
-        #     WITH cities_tracked as  (
-        #       select * from cities_city where track=True
-        #     )
-        #     select * from cities_tracked ORDER BY id;
-        #     DELETE cities_tracked;
-        #   """
-        # print(tmpsql)
-        # self.table.sql = tmpsql
-        # print(self.clear_sql())
+        if self.status == EtlStatus.RUNNING:
+            msq = 'Task Already running'
+            print(msq)
+            logger.exception(msq)
+            raise Exception(msq)
 
+        self.status = EtlStatus.PENDING
+        db.session.merge(self)
+        db.session.commit()
 
-        try:
-            sql = self.etl_sql()
-            print(sql)
-            with self.remote_engine.connect() as remote_con:
-                rrs = remote_con.execute(sql)
-                # print(rrs.fetchone())
+        # count columns in local table
+        etl_table_columns_count = self.get_columns_from_etl_table()
+        # print('etl_table_columns_count {}'.format(etl_table_columns_count))
 
-                rrs = remote_con.execute(sql)
-                print(rrs.rowcount)
-                # print(rrs.fetchone())
-                chunks = rrs.fetchmany(self.chunk_size)
-                for row in chunks:
-                    print(row)
-                print('next {} rows'.format(self.chunk_size))
-                chunks = rrs.fetchmany(self.chunk_size)
-                for row in chunks:
-                    print(row)
+        # connect to remote database
+        with self.remote_engine.connect() as remote_connection:
+            # connect to locale database
+            with self.local_engine.connect() as local_connection:
 
-        except Exception as e:
-            logger.exception(e)
-            # self.etl_not_valid(str(e))
+                locale_table_rows_count = local_connection.execute(
+                    self.locale_sql_count()).fetchone()['rows_count']
 
-        # local_db_session = db.session
-        #
-        # etl_id = 1
-        #
-        # try:
-        #     etl = local_db_session.query(EtlTable).filter_by(id=etl_id).one()
-        # except Exception as e:
-        #     logger.exception(e)
-        #     raise ValueError('Etl not found')
+                # print('locale_table_rows_count {}'.format(
+                #     locale_table_rows_count))
 
+                remote_table_rows_count = remote_connection.execute(
+                    self.remote_sql_count()).fetchone()['rows_count']
 
+                # print('remote_table_rows_count {}'.format(
+                #     remote_table_rows_count))
 
-        return True
+                # ----------------------------
 
+                remote_sql = self.remote_etl_sql()
 
-    # @celery_app.task(ignore_results=True)
+                # print(remote_sql)
 
-    @staticmethod
-    def sync(etl_id=0):
-        db_session = app_manager.get_db().session()
+                rc_result = remote_connection.execution_options(
+                    stream_results=True
+                ).execute(remote_sql)
 
-        try:
-            etl = db_session.query(EtlTable).filter_by(id=etl_id).one()
-            if etl.status == EtlStatus.RUNNING:
-                message = 'Task Already running'
-                logger.exception(message)
+                rc_cursor = rc_result.cursor
 
-            # count columns in local table
-            locale_cols_count = etl.get_columns_from_etl_table()
+                rt_columns_names = [col[0] for col in rc_cursor.description]
 
-            # connect to remote database
-            with etl.remote_engine.connect() as remote_con:
-                # connect to locale database
-                with etl.local_engine.connect() as local_con:
+                # count remote cols
+                remote_table_columns_count = len(rt_columns_names)
 
-                    # count rows in remote table
-                    rrs = remote_con.execute(etl.remote_sql_count()).fetchone()
-                    r_rows_count = rrs['rows_count']
+                # print('remote_table_columns_count {}'.format(
+                #     remote_table_columns_count))
 
-                    sql = etl.etl_sql()
+                # compare local and remote columns count
+                if remote_table_columns_count != etl_table_columns_count:
+                    # print('etl_not_valid 1')
+                    self.etl_not_valid('remote_cols != locale_cols')
 
-                    remote_con.execute(sql)
+                while True:
 
-                    while True:
+                    if self.status == EtlStatus.STOPPED:
+                        break
 
-                        if etl.status == EtlStatus.STOPPED:
-                            break
+                    # print('next {} rows'.format(self.chunk_size))
+                    chunks = rc_cursor.fetchmany(self.chunk_size)
 
-                        add_rows = []
+                    result_count = len(chunks)
 
-                        # chunk = self.result.fetchmany(self.chunk_size)
+                    # print('Row count from db {}'.format(result_count))
 
-                        # rrs = remote_con.execute(sql)
-                        cursor_description = rrs.cursor.description
+                    add_rows = []
 
-                        # count remote cols
-                        remote_cols_count = len(cursor_description)
-
-                        # compare local and remote columns count
-                        if remote_cols_count != locale_cols_count:
-                            etl.is_valid = False
-                            etl.is_scheduled = False
-                            db_session.merge(etl)
-                            db_session.commit()
-                            etl.etl_not_valid(e)
-
-                        for row in rrs:
-                            add_row = {}
-                            for column, value in row.items():
-                                add_row.update({str(column): value})
-                            add_rows.append(add_row)
-
-                        # complete
-                        if not add_rows:
-                            etl.status = EtlStatus.SUCCESS
-                            etl.progress = 100
-                            etl.sync_last_time = datetime.utcnow().replace(
-                                microsecond=0
+                    if chunks:
+                        for chunk in chunks:
+                            add_rows.append(
+                                dict(zip((c for c in rt_columns_names), chunk))
                             )
-                            etl.sync_next_time = etl.get_next_sync()
-                            etl.is_scheduled = False
-                            db_session.merge(etl)
-                            db_session.commit()
-                            break
 
-                        try:
-                            # add new rows to local table
-                            local_con.execute(
-                                etl.get_sql_table_object(
-                                    need_columns=False
-                                ).insert(),
-                                add_rows
-                            )
-                        except Exception as e:
-                            etl.is_valid = False
-                            etl.is_scheduled = False
-                            db_session.merge(etl)
-                            db_session.commit()
-                            etl.etl_not_valid(e)
+                    # complete
+                    if not add_rows:
+                        self.status = EtlStatus.SUCCESS
+                        self.progress = 100
+                        self.sync_last_time = datetime.utcnow().replace(
+                            microsecond=0
+                        )
+                        self.sync_next_time = self.get_next_sync()
+                        self.is_scheduled = False
+                        db.session.merge(self)
+                        db.session.commit()
+                        break
+
+                    # print(add_rows)
+
+                    try:
+                        # add new rows to local table
+                        local_connection.execute(
+                            self.get_sql_table_object(
+                                need_columns=False
+                            ).insert(),
+                            add_rows
+                        )
 
                         # count rows in locale table
-                        lrs = local_con.execute(etl.locale_sql_count()).fetchone()
-                        l_rows_count = lrs['rows_count']
+                        locale_table_rows_count = locale_table_rows_count + result_count
+
+                        # print('count rows in locale table {}'.format(
+                        #     locale_table_rows_count
+                        # ))
 
                         try:
                             last = add_rows[-1]
 
                             progress = float(
-                                100 * (float(l_rows_count) / float(r_rows_count))
+                                100 * (float(
+                                    locale_table_rows_count
+                                ) / float(
+                                    remote_table_rows_count
+                                ))
                             )
                             progress = round(progress, 4)
+                            # print(progress)
                             # logging.info(progress)
 
-                            etl.sync_last = last[etl.sync_field]
-                            etl.status = EtlStatus.RUNNING
-                            etl.progress = progress
+                            self.sync_last = last[self.sync_field]
+                            self.status = EtlStatus.RUNNING
+                            self.progress = progress
 
-                            db_session.merge(etl)
-                            db_session.commit()
+                            db.session.merge(self)
+                            db.session.commit()
                         except Exception as e:
-                            etl.is_valid = False
-                            etl.is_scheduled = False
-                            db_session.merge(etl)
-                            db_session.commit()
-                            etl.etl_not_valid(e)
+                            self.etl_not_valid(e)
 
-        except Exception as e:
-            logger.exception(e)
-            raise Exception(e)
+                    except Exception as e:
+                        self.etl_not_valid(e)
+
+        return True
 
     def sync_delay(self):
 
-        if self.status != EtlStatus.STOPPED:
-            message = 'Task Already running'
-            logger.warning(message)
-            raise Exception(message)
+        if self.status == EtlStatus.RUNNING:
+            msq = 'Task Already running'
+            print(msq)
+            logger.exception(msq)
+            raise Exception(msq)
 
-        self.status = EtlStatus.PENDING
-        self.is_scheduled = True
-
-        db.session.merge(self)
-        db.session.commit()
-
-        self.sync.delay(etl_id=self.id)
-
-        # db_session.merge(etl)
-        # db_session.commit()
-        #
-        # # run celery task
-        # sync_etl.delay(etl_id=etl.id)
-        #
-        #
-        # # run celery task
-        # # locale Celery tasks
-        # from bit.tasks import sync_etl
-        # sync_etl.delay(etl_id=self.id)
-
-        # run without celery
-        # sync_etl(etl_id=self.id)
-
-        # db_session = app_manager.get_db().session()
-        #
-        # """ Start New Sync ETL TASK. """
-        # logging.info('Try Run Sync {}'.format(
-        #     self.sql_table_name
-        # ))
-        # if self.status == EtlStatus.RUNNING:
-        #     raise Exception('Task Already running')
-        #
-        # self.status = EtlStatus.PENDING
-        # db_session.merge(self)
-        # db_session.commit()
-
-        # run celery task
-
-        # self.run.delay(etl_id=self.id)
-
-        # run without celery
-        # self.run(etl_id=self.id)
+        from bit.tasks import async_etl
+        async_etl.delay(etl_id=self.id)
 
     def stop(self):
         """ Stop ETL TASK. """
@@ -816,7 +677,7 @@ class EtlTable(Model, BaseDatasource):
 
             logger.info('SQL')
 
-            sql = self.etl_sql()
+            sql = self.remote_etl_sql()
 
             locale_cols_count = self.get_columns_from_etl_table()
 
@@ -837,8 +698,8 @@ class EtlTable(Model, BaseDatasource):
 
                 for row in rs:
                     add_row = {}
-                    for column, value in row.items():
-                        add_row.update({str(column): value})
+                    for row_column, row_value in row.items():
+                        add_row.update({str(row_column): row_value})
                     add_rows.append(add_row)
 
             if not add_rows:
@@ -1164,89 +1025,3 @@ class EtlTable(Model, BaseDatasource):
             return columns
 
         raise 'Cols not found'
-
-    # def valiate_columns(self):
-    #     """Validate if exsist columnt in table clause """
-    #     self.check_columns()
-    #
-    # def check_columns(self):
-    #     logging.info('Check columns')
-    #     logging.info('Get columns for query')
-    #
-    #     limit = 1
-
-        # if self.table.sql:
-            #
-            # logging.info("Original sql query")
-            # # logging.info(self.table.sql)
-            #
-            # table_sql = sqlparse.format(
-            #     self.table.sql, reindent=True,
-            #     keyword_case='upper').strip()
-            #
-            # statement_sql = sqlparse.parse(table_sql)[0]
-            #
-            # if statement_sql.get_type() != 'SELECT':
-            #     raise Exception('Allow only SELECT STATEMENTS')
-            #
-            # logging.info("statement_sql is SELECT")
-            # new_statement_sql = []
-            #
-            # for token in statement_sql.tokens:
-            #     if token.value in ['ORDER', 'LIMIT']:
-            #         break
-            #     new_statement_sql.append(str(token))
-            #
-            # logging.info("Parsed sql query")
-            # new_statement_sql = u''.join(new_statement_sql)
-
-            # limit_one = '{} LIMIT {}'.format(
-            #     new_statement_sql,
-            #     limit
-            # )
-            # self.get_columns_from_etl_table()
-            # r = sqltypes.INTEGER
-            # return False
-            # logging.info(limit_one)
-            # add_rows = []
-            # with self.remote_engine.connect() as remote_con:
-                # rs = remote_con.execute(limit_one).first()
-                # rs = remote_con.execute(limit_one)
-                # column_names = ([col[0] for col in cursor.description]
-                #                 if cursor.description else [])
-                # dialect = rs.context.dialect
-                # print(dialect.ischema_names)
-                # print(dialect.ischema_names[3])
-                # typemap = dialect.dbapi_type_map
-                # mapped_type = typemap.get(3, sqltypes.NULLTYPE)
-                # if rs:
-                #   for idx, rec in enumerate(rs.cursor.description):
-                # colname = rec[0]
-                # mapped_type = typemap.get(coltype, sqltypes.NULLTYPE)
-                # coltype = rec[1]
-                # rs = remote_con.execute(limit_one).first()
-                # if rs:
-                    # for row in rs:
-                    #    print(type(row))
-                    # for column, value in row.items():
-                    #     print(column)
-                    #     print(column.type)
-                    # pprint(rs.keys())
-                    # pprint(rs._metadata.keys)
-                    # rss = remote_con.execute(limit_one).scalar()
-                    # pprint(rss)
-                    # for row in rs:
-                    # pprint(dir(row))
-                    # add_row = {}
-                    # for column, value in row.items():
-                    # print(dir(column))
-                    # print(dir(value))
-                    # add_row.update({str(column): str(value)})
-                    # add_rows.append(add_row)
-                    # logging.info(add_rows)
-        # return False
-        # Table 'bit_etl._etl_q' is already defined for this MetaData instance.
-        # Specify 'extend_existing=True' to redefine options and columns on
-        # an existing Table object.
-
-# TODO WE CAN MOVE TO FULL ACCESS CONTROL ON CREATE SELF PACKAGE

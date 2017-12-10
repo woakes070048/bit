@@ -13,7 +13,7 @@ git clone https://github.com/codesmart-co/bit
 cd bit
 ```
 
-# Venv
+# Virtual Environment
 ```
 virtualenv venv
 
