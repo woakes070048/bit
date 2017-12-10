@@ -4,85 +4,62 @@ from datetime import datetime
 from celery import shared_task
 
 # superset
+from superset import db
 from superset import app
 from superset.utils import get_celery_app
 
 # locale
 from bitstart import app_manager
 from bit.models import EtlTable
-from bit.utils.etl_status import EtlStatus
 
-
-logger = getLogger(__name__)
 
 celery_app = get_celery_app(app.config)
+logger = getLogger(__name__)
 
 
 @shared_task
 def run_etl():
 
-    logger.info('Sheduler try run etl tasks')
+    # db_session = app_manager.get_db().session()
+    db_session = db.session()
 
-    db_session = app_manager.get_db().session()
+    msg = 'Scheduler Try Run ETL Async Tasks'
+    print(msg)
+    logger.info(msg)
 
-    etls = db_session.query(EtlTable).filter_by(
-        is_active=True,
-        is_valid=True,
-        is_scheduled=False
+    etl_tasks = db_session.query(EtlTable).with_for_update(
+        skip_locked=True
     ).filter(
+        EtlTable.is_active.is_(True),
+        EtlTable.is_valid.is_(True),
+        EtlTable.is_scheduled.isnot(True),
         EtlTable.sync_periodic != 0,
         EtlTable.sync_next_time < datetime.utcnow()
-    ).with_for_update()
+    )
 
-    for etl in etls:
-        etl.is_scheduled = True
-        db_session.merge(etl)
+    for etl_task in etl_tasks:
+        etl_task.is_scheduled = True
+        logger.info(etl_task)
+        async_etl.delay(etl_id=etl_task.id)
+        db_session.merge(etl_task)
+
     db_session.commit()
-
-    for etl in etls:
-        sync_etl.delay(etl_id=etl.id)
-
-    # # TODO add lock table
-    # etls = db_session.query(EtlTable).filter_by(
-    #     is_active=True,
-    #     is_valid=True,
-    #     is_scheduled=False
-    # ).filter(
-    #     EtlTable.sync_periodic != 0,
-    #     EtlTable.sync_next_time < datetime.utcnow()
-    # ).update({'is_scheduled': True}, synchronize_session='fetch')
-
-    # for etl in etls:
-    #     # etl.sync_delay()
-
-    #     sync_etl.delay(etl_id=etl.id)
-
-    #     # if etl.status == EtlStatus.RUNNING:
-    #     #     message = 'Task Already running'
-    #     #     logger.exception(message)
-    #     #     raise Exception(message)
-    #     #
-    #     # etl.status = EtlStatus.PENDING
-    #     # etl.is_scheduled = True
-    #     #
-    #     # db_session.merge(etl)
-    #     # db_session.commit()
-    #     #
-    #     # # run celery task
-    #     # sync_etl.delay(etl_id=etl.id)
     return True
 
 
 @celery_app.task(ignore_results=True)
-def sync_etl(etl_id=0):
+def async_etl(etl_id=0):
     """Run Etl Sync Data From DataSource to DWH."""
 
-    logger.info('Run Etl Sync')
+    msq = 'Run Async ETL Id ({}) Task'.format(etl_id)
+    print(msq)
+    logger.info(msq)
 
-    db_session = app_manager.get_db().session()
-
+    # db_session = app_manager.get_db().session()
+    db_session = db.session()
     try:
-        etl = db_session.query(EtlTable).filter_by(id=etl_id).one()
-        etl.sync()
+        db_session.query(EtlTable).filter_by(id=etl_id).one().sync()
     except Exception as e:
+        print(e)
         logger.exception(e)
+        raise
