@@ -1,17 +1,16 @@
 # system
+import petl
+import sqlparse
 from logging import getLogger
 from datetime import datetime, timedelta
 from dateutil import parser as dateutil_parser
-from collections import namedtuple
-import sqlparse
-import petl
 
 # sqlalchemy
 import sqlalchemy as sa
-from sqlalchemy import text, table
+from sqlalchemy import asc
+from sqlalchemy import table
 from sqlalchemy import select
 from sqlalchemy import column
-from sqlalchemy import bindparam
 from sqlalchemy import Column
 from sqlalchemy import Numeric
 from sqlalchemy import Integer
@@ -21,7 +20,8 @@ from sqlalchemy import Boolean
 from sqlalchemy import DateTime
 from sqlalchemy import Table
 from sqlalchemy import MetaData
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.engine import reflection
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.schema import CreateTable
@@ -30,6 +30,7 @@ from sqlalchemy.schema import DropTable
 # superset
 from superset import utils
 from superset import app
+from superset.jinja_context import get_template_processor
 from superset.utils import get_celery_app
 
 # do not delete. need ot on fly create hstore column
@@ -156,7 +157,7 @@ class EtlTable(Model, BaseDatasource):
     # to save for any schema user set
     schema = Column(String(255), default=DB_ETL_SCHEMA)
     sync_field = Column(String(250), default='id')
-    sync_last = Column(String(250), default=0)
+    sync_last = Column(String(250), default='')
     sync_last_time = Column(DateTime, default=datetime.utcnow)
     sync_next_time = Column(DateTime, default=datetime.utcnow)
     sync_periodic = Column(Integer, default=0)
@@ -167,6 +168,7 @@ class EtlTable(Model, BaseDatasource):
     # progress = Column(Integer, default=0)  # 1..100
     progress = Column(Numeric, default=0)  # 1..100
     calculate_progress = Column(Boolean, default=True)
+    downloaded_rows = Column(Integer, default=0)
     is_valid = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     is_scheduled = Column(Boolean, default=False)
@@ -180,7 +182,6 @@ class EtlTable(Model, BaseDatasource):
         'Connector',
         backref=backref('etl_tables', cascade='all, delete-orphan'),
         foreign_keys=[connector_id])
-
 
     # Relation
     table_id = Column(Integer, ForeignKey('tables.id'))
@@ -232,6 +233,10 @@ class EtlTable(Model, BaseDatasource):
         """Remote DataBase"""
         return self.table.database.get_sqla_engine()
 
+    def get_template_processor(self, **kwargs):
+        return get_template_processor(
+            table=self.table, database=self.table.database, **kwargs)
+
     def all_schema_names(self):
         """Return all schema names in referred"""
 
@@ -245,6 +250,12 @@ class EtlTable(Model, BaseDatasource):
         logger.info('all_table_names')
         logger.info(self.inspector.get_table_names(self.schema))
         return self.inspector.get_table_names(self.schema)
+
+    def get_sqla_table(self):
+        tbl = table(self.table.table_name)
+        if self.schema:
+            tbl.schema = self.schema
+        return tbl
 
     def exist_schema(self):
         return self.schema in self.all_schema_names()
@@ -336,9 +347,6 @@ class EtlTable(Model, BaseDatasource):
         msq = '[etl_not_valid] {}'.format(
             err[:1000]
         )
-
-
-        print(msq)
         logger.exception(msq)
 
         # TODO SET USER OBJECT
@@ -390,30 +398,29 @@ class EtlTable(Model, BaseDatasource):
         sql_new_statement = u''.join(sql_new_statement)
 
         # logging.info(sql_new_statement)
+
+        if self.sync_last != '':
+            print(self.sync_last)
+            tp = self.get_template_processor(sync_last=self.sync_last)
+        else:
+            tp = self.get_template_processor()
+
+        sql_new_statement = tp.process_template(sql_new_statement)
+
         return sql_new_statement
 
     def remote_etl_sql(self):
+        """SQL QUERY FOR RESULTS FROM REMOTE SOURCE"""
         if not self.table.sql:
             """Use table name."""
             try:
-                sql = 'SELECT * FROM {table} ' \
-                      'WHERE {pk}> \'{pk_last}\' ' \
-                      'ORDER BY {pk} ASC;'.\
-                    format(
-                        table=self.table.table_name,
-                        pk=self.sync_field,
-                        pk_last=self.sync_last
-                    )
+                columns = {col.column_name: col for col in self.table.columns}
 
-                # sql = 'SELECT * FROM {table} ' \
-                #       'WHERE {pk}> \'{pk_last}\' ' \
-                #       'ORDER BY {pk} LIMIT {limit};'. \
-                #     format(
-                #     table=self.table.table_name,
-                #     pk=self.sync_field,
-                #     pk_last=self.sync_last,
-                #     limit=self.chunk_size
-                # )
+                sql = select([]).select_from(self.get_sqla_table())
+
+                if self.sync_field and self.sync_field in columns:
+                    sql = sql.where(column(self.sync_field) > self.sync_last)
+                    sql = sql.order_by(asc(self.sync_field))
 
                 return sql
             except Exception as e:
@@ -422,58 +429,26 @@ class EtlTable(Model, BaseDatasource):
         else:
             """Use custom sql query."""
             try:
-                sql = 'SELECT * FROM ({sql}) AS CHITER ' \
-                      'WHERE {pk}> \'{pk_last}\' ' \
-                      'ORDER BY {pk} ASC;'.\
-                    format(
-                        sql=self.clear_sql(),
-                        pk=self.sync_field,
-                        pk_last=self.sync_last
-                    )
-                # sql = 'SELECT * FROM ({sql}) AS CHITER ' \
-                #       'WHERE {pk}> \'{pk_last}\' ' \
-                #       'ORDER BY {pk} LIMIT {limit};'.\
-                #     format(
-                #         sql=self.clear_sql(),
-                #         pk=self.sync_field,
-                #         pk_last=self.sync_last,
-                #         limit=self.chunk_size
-                #     )
 
-                # TODO WRITE MACROS SUPPORT
+                return self.clear_sql()
 
-                # sql = select([
-                #     text(self.clear_sql().replace('SELECT', ''))
-                # ]).where(
-                #     column(self.sync_field) > self.sync_last
-                # ).order_by(
-                #     self.sync_field
-                # )
-                return sql
             except Exception as e:
                 logger.exception(str(e))
                 raise
 
     def remote_sql_count(self):
-        sql = ''
-        if not self.table.sql:
-            """Use table name."""
-            try:
-                sql = 'SELECT COUNT(*) AS rows_count FROM {table};'.format(
-                    table=self.table.table_name
+        """SQL QUERY FOR COUNT ROW IN REMOTE SOURCE"""
+        try:
+            return 'SELECT COUNT(*) AS rows_count FROM ({sql}) AS CHITER;'. \
+                format(
+                    sql=self.remote_etl_sql().compile(
+                        compile_kwargs={"literal_binds": True})
                 )
-            except Exception as e:
-                logger.exception(str(e))
-        else:
-            try:
-                sql = 'SELECT COUNT(*) AS rows_count FROM ({sql}) AS CHITER;'.\
-                    format(
-                        sql=self.clear_sql()
-                    )
-            except Exception as e:
-                logger.exception(str(e))
-
-        return sql
+        except AttributeError:
+            return 'SELECT COUNT(*) AS rows_count FROM ({sql}) AS CHITER;'. \
+                format(
+                    sql=self.remote_etl_sql()
+                )
 
     def locale_sql_count(self):
         sql = ''
@@ -511,6 +486,9 @@ class EtlTable(Model, BaseDatasource):
             raise Exception(msq)
 
         self.status = EtlStatus.PENDING
+        self.downloaded_rows = 0
+        self.progress = 0
+
         db.session.merge(self)
         db.session.commit()
 
@@ -523,17 +501,18 @@ class EtlTable(Model, BaseDatasource):
             # connect to locale database
             with self.local_engine.connect() as local_connection:
 
-                locale_table_rows_count = local_connection.execute(
-                    self.locale_sql_count()).fetchone()['rows_count']
+                if self.calculate_progress:
+                    locale_table_rows_count = local_connection.execute(
+                        self.locale_sql_count()).fetchone()['rows_count']
 
-                print('locale_table_rows_count {}'.format(
-                    locale_table_rows_count))
+                    print('locale_table_rows_count {}'.format(
+                        locale_table_rows_count))
 
-                remote_table_rows_count = remote_connection.execute(
-                    self.remote_sql_count()).fetchone()['rows_count']
+                    remote_table_rows_count = remote_connection.execute(
+                        self.remote_sql_count()).fetchone()['rows_count']
 
-                print('remote_table_rows_count {}'.format(
-                    remote_table_rows_count))
+                    print('remote_table_rows_count {}'.format(
+                        remote_table_rows_count))
 
                 # ----------------------------
 
@@ -604,30 +583,23 @@ class EtlTable(Model, BaseDatasource):
                             add_rows
                         )
 
-                        # count rows in locale table
-                        locale_table_rows_count = locale_table_rows_count + result_count
-
-                        # print('count rows in locale table {}'.format(
-                        #     locale_table_rows_count
-                        # ))
-
                         try:
                             last = add_rows[-1]
 
-                            progress = float(
-                                100 * (float(
-                                    locale_table_rows_count
-                                ) / float(
-                                    remote_table_rows_count
-                                ))
-                            )
-                            progress = round(progress, 4)
-                            # print(progress)
-                            # logging.info(progress)
-
                             self.sync_last = last[self.sync_field]
                             self.status = EtlStatus.RUNNING
-                            self.progress = progress
+                            self.downloaded_rows = self.downloaded_rows + result_count
+
+                            if self.calculate_progress:
+                                locale_table_rows_count = locale_table_rows_count + result_count
+                                progress = float(
+                                    100 * (float(
+                                        locale_table_rows_count
+                                    ) / float(
+                                        remote_table_rows_count
+                                    ))
+                                )
+                                self.progress = round(progress, 4)
 
                             db.session.merge(self)
                             db.session.commit()
@@ -663,6 +635,41 @@ class EtlTable(Model, BaseDatasource):
 
             db.session.merge(self)
             db.session.commit()
+
+    def clear(self):
+        """ Stop ETL TASK and Clear ETL local table """
+
+        dt = datetime.utcnow().replace(
+            microsecond=0
+        )
+
+        self.status = EtlStatus.STOPPED
+        self.sync_last = ''
+        self.sync_last_time = dt
+        self.sync_periodic = 0
+        self.is_scheduled = False
+        self.chunk_size = 0
+        self.progress = 0
+        self.sync_next_time = self.get_next_sync()
+
+        db.session.merge(self)
+        db.session.commit()
+
+        table_name = self.sql_table_name
+
+        if self.schema and self.sql_table_name:
+            table_name = '{schema}.{table}'.format(
+                schema=self.schema,
+                table=self.sql_table_name
+            )
+        sql_truncate = 'TRUNCATE TABLE {} CONTINUE IDENTITY RESTRICT;'.format(
+            table_name
+        )
+
+        with self.local_engine.connect() as local_conection:
+            local_conection.execution_options(
+                autocommit=True
+            ).execute(sql_truncate)
 
     def sync_once(self):
         """ For test. """
@@ -1025,4 +1032,4 @@ class EtlTable(Model, BaseDatasource):
             logger.info(columns)
             return columns
 
-        raise 'Cols not found'
+        raise Exception('Cols not found')
