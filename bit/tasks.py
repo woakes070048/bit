@@ -13,7 +13,7 @@ from bitstart import app_manager
 from bit.models import EtlTable
 
 
-celery_app = get_celery_app(app.config)
+celery_app = get_celery_app(app)
 logger = getLogger(__name__)
 
 from celery.signals import worker_process_init
@@ -26,7 +26,8 @@ def on_fork_close_session(**kwargs):
         db.engine.dispose()
 
 
-@shared_task
+# @shared_task
+@celery_app.task(ignore_results=True)
 def run_etl():
 
     # db_session = app_manager.get_db().session()

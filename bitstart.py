@@ -44,8 +44,8 @@ app_manager = AppManager(app)
 migrate.directory = BIT_APP_DIR + '/migrations'
 app.extensions['migrate'].directory = BIT_APP_DIR + '/migrations'
 
-config = app.config
-celery_app = utils.get_celery_app(config)
+
+celery_app = utils.get_celery_app(app)
 
 
 @manager.command
