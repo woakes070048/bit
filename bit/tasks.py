@@ -6,13 +6,14 @@ from celery import shared_task
 # superset
 from superset import db
 from superset import app
+# from superset import create_app  # noqa
 from superset.utils import get_celery_app
 
 # locale
-from bitstart import app_manager
 from bit.models import EtlTable
 
 
+# app, db, migrate = create_app()
 celery_app = get_celery_app(app)
 logger = getLogger(__name__)
 

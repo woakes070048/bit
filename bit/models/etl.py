@@ -31,7 +31,6 @@ from sqlalchemy.schema import DropTable
 from superset import utils
 from superset import app
 from superset.jinja_context import get_template_processor
-from superset.utils import get_celery_app
 
 # do not delete. need ot on fly create hstore column
 from sqlalchemy.dialects import postgresql
@@ -44,18 +43,19 @@ from flask_babel import lazy_gettext as _
 # superset
 from superset import app
 from superset import db
+# from superset import create_app
 from superset import sm
 from superset.connectors.base.models import BaseDatasource
 from superset.utils import send_email_smtp
 from superset.connectors.sqla.models import SqlaTable
 
 # locale
-# from bitstart import app_manager
 from bit.utils.etl_status import EtlStatus
+
+# app, db, migrate = create_app()
 
 
 logger = getLogger(__name__)
-celery_app = get_celery_app(app.config)
 stats_logger = app.config.get('STATS_LOGGER')
 MODULE_NAME = 'etl'
 DB_PREFIX = '{}_{}'.format(
@@ -390,7 +390,8 @@ class EtlTable(Model, BaseDatasource):
         sql_new_statement = []
 
         for sql_token in sql_statement.tokens:
-            if sql_token.value in ['ORDER', 'LIMIT']:
+            # if sql_token.value in ['ORDER', 'LIMIT']:
+            if sql_token.value in ['LIMIT']:
                 break
             sql_new_statement.append(str(sql_token))
 
@@ -544,10 +545,11 @@ class EtlTable(Model, BaseDatasource):
                     if self.status == EtlStatus.STOPPED:
                         break
 
-                    print('next {} rows'.format(self.chunk_size))
                     chunks = rc_cursor.fetchmany(self.chunk_size)
 
                     result_count = len(chunks)
+
+                    print('next {} rows'.format(result_count))
 
                     # print('Row count from db {}'.format(result_count))
 
@@ -608,7 +610,7 @@ class EtlTable(Model, BaseDatasource):
 
                     except Exception as e:
                         self.etl_not_valid(e)
-
+        # db.engine.dispose()
         return True
 
     def sync_delay(self):
@@ -648,7 +650,7 @@ class EtlTable(Model, BaseDatasource):
         self.sync_last_time = dt
         self.sync_periodic = 0
         self.is_scheduled = False
-        self.chunk_size = 0
+        # self.chunk_size = 0
         self.progress = 0
         self.sync_next_time = self.get_next_sync()
 

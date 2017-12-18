@@ -65,8 +65,8 @@ class EtlTableView(SupersetModelView, DeleteMixin):
 
     list_columns = [
         'connector.type', 'connector.name', 'table.database', 'table',
-        'datasource', 'sql_table_name', 'save_in_prt', 'sync_field',
-        'sync_last', 'sync_last_time', 'progress', 'status',
+        'datasource', 'sql_table_name', 'downloaded_rows', 'progress',
+        'sync_last', 'sync_last_time',  'status', 'save_in_prt', 'sync_field',
         'repr_sync_periodic', 'sync_next_time', 'is_valid', 'is_active',
         'is_scheduled'
         # 'table.sql'
@@ -74,15 +74,15 @@ class EtlTableView(SupersetModelView, DeleteMixin):
 
     add_columns = [
         'connector', 'table', 'datasource', 'name', 'save_in_prt',
-        'sync_field', 'sync_last', 'chunk_size', 'sync_periodic',
-        'sync_periodic_hour'
+        'calculate_progress', 'sync_field', 'sync_last', 'chunk_size',
+        'sync_periodic', 'sync_periodic_hour'
     ]
 
     edit_schema = ['schema']
 
     edit_columns = [
-        'save_in_prt', 'sync_field', 'sync_last', 'chunk_size',
-        'sync_periodic', 'sync_periodic_hour', 'is_active'
+        'calculate_progress', 'save_in_prt', 'sync_field', 'sync_last',
+        'chunk_size', 'sync_periodic', 'sync_periodic_hour', 'is_active'
     ]
 
     edit_columns = edit_columns
@@ -111,10 +111,10 @@ class EtlTableView(SupersetModelView, DeleteMixin):
         #         # master_id='connector',
         #         endpoint='/connectorview/api/column/add/datasource'
         #
-        #         # http://127.0.0.1:5000/connectorview/api/column/add/get_admin_data_sources?_flt_0_id=1
-        #         # endpoint='/appsflyerconnectorview/api/column/add/contact_sub_group?_flt_0__id={{ID}}'
+        #         # http://127.0.0.1:5000/connectorview/api/column/add/get_admin_data_sources?_flt_0_id=1  # noqa
+        #         # endpoint='/appsflyerconnectorview/api/column/add/contact_sub_group?_flt_0__id={{ID}}'  # noqa
         #
-        #         # endpoint='/appsflyerconnectorview/api/read?_flt_0_id={{ID}}'
+        #         # endpoint='/appsflyerconnectorview/api/read?_flt_0_id={{ID}}'   # noqa
         #     )
         # ),
 
@@ -125,7 +125,7 @@ class EtlTableView(SupersetModelView, DeleteMixin):
         #     col_name='reports',
         #     widget=Select2SlaveAJAXWidget(
         #         master_id='connector',
-        #         # endpoint='/appsflyerconnectorview/api/column/add/contact_sub_group?_flt_0__id={{ID}}')
+        #         # endpoint='/appsflyerconnectorview/api/column/add/contact_sub_group?_flt_0__id={{ID}}')   # noqa
         #         endpoint='/appsflyerconnectorview/api/read?_flt_0_id={{ID}}'
         #     )
         # ),
@@ -148,12 +148,12 @@ class EtlTableView(SupersetModelView, DeleteMixin):
     add_form_extra_fields = etl_extra_fields
     edit_form_extra_fields = etl_extra_fields
 
-    description_columns = {
-        # 'sync_periodic_hour': _(
-        #     'Use if you select one of [Once a month, '
-        #     'Once a week, Once a day] Periodic'
-        # ),
-    }
+    # description_columns = {
+    #     'sync_periodic_hour': (
+    #         'Use if you select one of [Once a month, '
+    #         'Once a week, Once a day] Periodic'
+    #     ),
+    # }
 
     # etl_extra_fields = {'schema': StringField(widget=BS3TextFieldROWidget())}
     # add_form_extra_fields = etl_extra_fields
@@ -161,7 +161,7 @@ class EtlTableView(SupersetModelView, DeleteMixin):
     # related_views = [TableColumnInlineView]
 
     # actions
-    @action('sync_etl', 'sync',
+    @action('sync_etl', 'Sync',
             'Sync data for this table', 'fa-play')
     def sync(self, item):
         """Call sync etl."""
@@ -169,15 +169,24 @@ class EtlTableView(SupersetModelView, DeleteMixin):
 
         return redirect('etltableview/list/')
 
-    @action('sync_etl_stop', 'sync stop',
-            'Stop sync data for this table', 'fa-stop')
-    def sync_stop(self, item):
-        """Call stop etl."""
-        item[0].stop()
+    @action('re_sync_etl', 'ReSync',
+            'Clear data, and get new data for this table', 'fa-repeat')
+    def re_sync(self, item):
+        """Call ReSync etl."""
+        item[0].clear()
+        item[0].sync_delay()
 
         return redirect('etltableview/list/')
 
-    @action('sync_etl_once', 'sync once',
+    @action('check_sql', 'Check_sql',
+            'Stop sync data and clear data', 'fa-check')
+    def check_sql(self, item):
+        """Call stop etl."""
+        print(item[0].remote_etl_sql())
+
+        return redirect('etltableview/list/')
+
+    @action('sync_etl_once', 'Sync once',
             'Sync data for this table', 'fa-step-forward')
     def sync_once(self, item):
         """Call test_sync_etl."""
@@ -185,18 +194,32 @@ class EtlTableView(SupersetModelView, DeleteMixin):
 
         return redirect('etltableview/list/')
 
+    @action('sync_etl_stop', 'Sync stop',
+            'Stop sync data for this table', 'fa-stop')
+    def sync_stop(self, item):
+        """Call stop etl."""
+        item[0].stop()
+
+        return redirect('etltableview/list/')
+
+    @action('clear_etl', 'Clear',
+            'Stop sync data and clear data', 'fa-trash-o')
+    def clear_etl(self, item):
+        """Call stop etl."""
+        item[0].clear()
+
+        return redirect('etltableview/list/')
+
+
     def pre_add(self, obj):
         """Check data before save"""
 
         if obj.name == '':
             raise Exception('Enter a table name')
 
-        # if obj.table_id:
-        #     # Create table
-
         obj.create_table()
         obj.sync_next_time = obj.get_next_sync()
-        # test
+
         # obj.cccc()
 
     # def post_add(self):
@@ -266,26 +289,26 @@ appbuilder.add_view(
     category_label=__('Reports')
 )
 
-
-class DataSourceInfoView(SupersetModelView, DeleteMixin):
-    """View For Connector Model."""
-
-    datamodel = SQLAInterface(DataSourceInfo)
-
-    list_columns = [
-        'source',
-        'name',
-        'sync_time',
-        'last_id',
-    ]
-
-
-# Register DataSourceInfoView Model View
-appbuilder.add_view(
-    DataSourceInfoView,
-    'DataSourceInfo',
-    icon='fa-table',
-    category='Reports',
-    category_icon='fa-refresh',
-    category_label=__('ETL')
-)
+#
+# class DataSourceInfoView(SupersetModelView, DeleteMixin):
+#     """View For Connector Model."""
+#
+#     datamodel = SQLAInterface(DataSourceInfo)
+#
+#     list_columns = [
+#         'source',
+#         'name',
+#         'sync_time',
+#         'last_id',
+#     ]
+#
+#
+# # Register DataSourceInfoView Model View
+# appbuilder.add_view(
+#     DataSourceInfoView,
+#     'DataSourceInfo',
+#     icon='fa-table',
+#     category='Reports',
+#     category_icon='fa-refresh',
+#     category_label=__('ETL')
+# )
