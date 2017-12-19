@@ -25,6 +25,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.engine import reflection
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.schema import CreateTable
+from sqlalchemy.schema import CreateIndex
 from sqlalchemy.schema import DropTable
 
 # superset
@@ -167,7 +168,7 @@ class EtlTable(Model, BaseDatasource):
     status = Column(String(16), default=EtlStatus.STOPPED)
     # progress = Column(Integer, default=0)  # 1..100
     progress = Column(Numeric, default=0)  # 1..100
-    calculate_progress = Column(Boolean, default=True)
+    calculate_progress = Column(Boolean, default=False)
     downloaded_rows = Column(Integer, default=0)
     is_valid = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
@@ -299,7 +300,13 @@ class EtlTable(Model, BaseDatasource):
             return True
 
         table = self.get_sql_table_object(need_columns=True)
-        return self.local_engine.execute(CreateTable(table))
+
+        db_table = self.local_engine.execute(CreateTable(table))
+
+        for index in table.indexes:
+            self.local_engine.execute(CreateIndex(index))
+
+        return db_table
 
     def delete_table(self):
         logger.info('try to delete table {} in {}'.format(
@@ -970,13 +977,15 @@ class EtlTable(Model, BaseDatasource):
         logger.info(connector_type)
 
         if connector_type == 'SQL':
+
             for column in self.table.columns:
                 column_type = self.clear_column_type(column.type)
                 try:
                     columns.append(
                         Column(
-                            column.column_name,
-                            eval(column_type)
+                            name=column.column_name,
+                            type_=eval(column_type),
+                            index=column.is_index
                         )
                     )
                 except Exception:
@@ -986,8 +995,9 @@ class EtlTable(Model, BaseDatasource):
                     ))
                     columns.append(
                         Column(
-                            column.column_name,
-                            eval('sa.Text()')
+                            name=column.column_name,
+                            type_=eval('sa.Text()'),
+                            index=column.is_index
                         )
                     )
             return columns

@@ -7,6 +7,8 @@ from kombu import Exchange, Queue
 from werkzeug.contrib.cache import RedisCache
 
 
+ROW_LIMIT = 10000
+
 # override superset connectors
 DEFAULT_MODULE_DS_MAP = OrderedDict([
     ('superset.connectors.sqla.models', ['SqlaTable']),
@@ -26,7 +28,7 @@ class CeleryConfig(object):
     BROKER_URL = 'redis://{}:{}/0'.format(REDIS_ADDR, REDIS_PORT)
     CELERY_IMPORTS = ('superset.sql_lab', 'bit.tasks')
     CELERY_TIMEZONE = 'UTC'
-    CELERY_LOGLEVEL = 'INFO'
+    CELERYD_LOG_LEVEL = 'DEBUG'
     CELERYBEAT_SCHEDULE = {
         'add-every-30-seconds': {
             'task': 'bit.tasks.run_etl',

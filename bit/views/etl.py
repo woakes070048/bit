@@ -35,8 +35,8 @@ from superset import appbuilder
 from superset.views.base import SupersetModelView
 from superset.views.base import DeleteMixin
 from superset.views.base import get_datasource_exist_error_mgs
-from superset.connectors.sqla.views import TableModelView
-from superset.connectors.sqla.views import TableColumnInlineView
+# from superset.connectors.sqla.views import TableModelView
+# from superset.connectors.sqla.views import TableColumnInlineView
 
 
 
@@ -209,7 +209,6 @@ class EtlTableView(SupersetModelView, DeleteMixin):
         item[0].clear()
 
         return redirect('etltableview/list/')
-
 
     def pre_add(self, obj):
         """Check data before save"""
