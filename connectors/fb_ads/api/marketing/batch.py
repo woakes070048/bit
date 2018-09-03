@@ -3,7 +3,7 @@ import copy
 import logging
 
 # facebook ads
-from facebookads.api import FacebookAdsApiBatch, Cursor
+from facebook_business.api import FacebookAdsApiBatch, Cursor
 
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 # Facebook Ads Config File
 from packaging.version import Version
 
-from facebookads.adobjects.adsinsights import AdsInsights as fbAdsInsights
+from facebook_business.adobjects.adsinsights import AdsInsights as fbAdsInsights
 
 from superset import app
 

@@ -1,8 +1,8 @@
-from facebookads.adobjects.adaccount import AdAccount as fbAdAccount
-from facebookads.adobjects.campaign import Campaign as fbAdCampaign
-from facebookads.adobjects.adset import AdSet as fbAdSet
-from facebookads.adobjects.ad import Ad as fbAd
-from facebookads.adobjects.adsinsights import AdsInsights as fbAdsInsights
+from facebook_business.adobjects.adaccount import AdAccount as fbAdAccount
+from facebook_business.adobjects.campaign import Campaign as fbAdCampaign
+from facebook_business.adobjects.adset import AdSet as fbAdSet
+from facebook_business.adobjects.ad import Ad as fbAd
+from facebook_business.adobjects.adsinsights import AdsInsights as fbAdsInsights
 
 """
 TODO

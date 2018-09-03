@@ -4,9 +4,9 @@ import petl
 import zlib
 from datetime import datetime, timedelta
 
-# facebookads
-from facebookads.api import FacebookAdsApi
-from facebookads.adobjects.adsinsights import AdsInsights as fbAdsInsights
+# facebook_business
+from facebook_business.api import FacebookAdsApi
+from facebook_business.adobjects.adsinsights import AdsInsights as fbAdsInsights
 
 # sqlalchemy
 from sqlalchemy import Column
@@ -16,7 +16,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
 
-from facebookads.adobjects.adaccount import AdAccount as fbAdAccount
+from facebook_business.adobjects.adaccount import AdAccount as fbAdAccount
 
 # superset
 from superset import cache
