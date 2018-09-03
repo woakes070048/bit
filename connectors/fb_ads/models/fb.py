@@ -80,6 +80,8 @@ class AdAccount(Model, ModelHelper):
     timezone_offset_hours_utc = Column(Numeric)
     account_status = Column(Integer)
     synchronize = Column(Boolean, default=True)
+    from_date = Column(String(255))
+    to_date = Column(String(255))
 
     def __repr__(self):
         """Object name."""
@@ -179,17 +181,22 @@ class AdAccount(Model, ModelHelper):
         self.connector.api
         fb_ad_account = fbAdAccount(fbid=self.native_id)
 
-        DATA_SOURCE_START_DATE = '2017-08-18'
+        # DATA_SOURCE_START_DATE = '2018-01-30'
+
+        # since = parser.parse(DATA_SOURCE_START_DATE).date()
+
+        # until = since + datetime.timedelta(days=7)
 
         now = datetime.datetime.now().date()
         yesterday = now - datetime.timedelta(days=1)
 
-        since = parser.parse(DATA_SOURCE_START_DATE).date()
+        since = parser.parse(self.from_date).date()
 
         if since > yesterday:
             return None
 
-        until = since + datetime.timedelta(days=30)
+        until = parser.parse(self.to_date).date()
+
         until = min(until, yesterday)
         time_range = {
             'since': since.isoformat(),
@@ -202,7 +209,7 @@ class AdAccount(Model, ModelHelper):
             # fbAdsInsights.Breakdowns.gender,
         )
 
-        report_name = '1321fsdfds2'
+        report_name = '30fdsfds2432423'
 
         logger.info(
             "Run report '{0}' since: {1} until: {2}".format(report_name, since,
@@ -264,6 +271,9 @@ class AdAccount(Model, ModelHelper):
             return []
 
         logger.info(table.len())
+
+        if table.len() < 20:
+            logger.info(table)
 
         for fb_insight in petl.dicts(table).list():
             if 'Ad ID' in fb_insight:

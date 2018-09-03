@@ -25,7 +25,7 @@ class AdAccountView(SupersetModelView, DeleteMixin):
 
     datamodel = SQLAInterface(AdAccount)
 
-    list_columns = ['connector', 'name', 'synchronize']
+    list_columns = ['connector', 'name', 'synchronize', 'from_date', 'to_date']
 
     # actions
     @action(
